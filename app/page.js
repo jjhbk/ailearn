@@ -1,7 +1,6 @@
-"use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 
-// ─── KaTeX loader ─────────────────────────────────────────────────────────────
+// ─── KaTeX ─────────────────────────────────────────────────────────────────────
 function useMath() {
   const [ready, setReady] = useState(false);
   useEffect(() => {
@@ -10,46 +9,40 @@ function useMath() {
     link.rel = "stylesheet";
     link.href = "https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css";
     document.head.appendChild(link);
-    const script = document.createElement("script");
-    script.src = "https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js";
-    script.onload = () => setReady(true);
-    document.head.appendChild(script);
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js";
+    s.onload = () => setReady(true);
+    document.head.appendChild(s);
   }, []);
   return ready;
 }
-
-function MathEq({ tex, display = false }) {
+function MathEq({ tex, display = false, style = {} }) {
   const ref = useRef(null);
   const ready = useMath();
   useEffect(() => {
     if (ready && ref.current && window.katex) {
-      try {
-        window.katex.render(tex, ref.current, { displayMode: display, throwOnError: false });
-      } catch (e) {}
+      try { window.katex.render(tex, ref.current, { displayMode: display, throwOnError: false }); } catch (e) {}
     }
   }, [ready, tex, display]);
-  return <span ref={ref} style={{ color: display ? "#90ee90" : "#b8e6b8", fontSize: display ? "1.05em" : "0.95em" }} />;
+  return <span ref={ref} style={{ color: display ? "#90ee90" : "#a8d8a8", fontSize: display ? "1.1em" : "0.95em", ...style }} />;
 }
 
-// ─── Shared Slider ─────────────────────────────────────────────────────────────
-function Slider({ label, min, max, val, step, onChange, color }) {
+// ─── Shared UI ─────────────────────────────────────────────────────────────────
+function Slider({ label, min, max, val, step = 1, onChange, color = "#4fffb0" }) {
   const decimals = step < 0.1 ? 2 : step < 1 ? 1 : 0;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-      <span style={{ fontFamily: "monospace", fontSize: 10, color: "#666", minWidth: 130 }}>{label}</span>
-      <input
-        type="range" min={min} max={max} value={val} step={step}
+      <span style={{ fontFamily: "monospace", fontSize: 10, color: "#556", minWidth: 140 }}>{label}</span>
+      <input type="range" min={min} max={max} value={val} step={step}
         onChange={e => onChange(parseFloat(e.target.value))}
-        style={{ flex: 1, accentColor: color, cursor: "pointer" }}
-      />
-      <span style={{ fontFamily: "monospace", fontSize: 11, color, minWidth: 44, textAlign: "right" }}>
+        style={{ flex: 1, accentColor: color, cursor: "pointer" }} />
+      <span style={{ fontFamily: "monospace", fontSize: 11, color, minWidth: 48, textAlign: "right" }}>
         {Number(val).toFixed(decimals)}
       </span>
     </div>
   );
 }
-
-function BtnRow({ options, active, onSelect, color }) {
+function BtnRow({ options, active, onSelect, color = "#4fffb0" }) {
   return (
     <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
       {options.map(o => (
@@ -63,1089 +56,1235 @@ function BtnRow({ options, active, onSelect, color }) {
     </div>
   );
 }
-
-function OutputCard({ label, value, color }) {
+function StatBox({ label, val, unit = "", color = "#4fffb0" }) {
   return (
-    <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 8, padding: "10px 12px", textAlign: "center" }}>
-      <div style={{ fontFamily: "monospace", fontSize: 17, fontWeight: 700, color }}>{value}</div>
-      <div style={{ fontFamily: "monospace", fontSize: 9, color: "#555", marginTop: 3 }}>{label}</div>
+    <div style={{ background: "#0a0c0e", border: `1px solid ${color}22`, borderRadius: 8, padding: "8px 12px", textAlign: "center", minWidth: 90 }}>
+      <div style={{ fontFamily: "monospace", fontSize: 18, color, fontWeight: 700 }}>{val}<span style={{ fontSize: 10, color: color + "99" }}>{unit}</span></div>
+      <div style={{ fontFamily: "monospace", fontSize: 9, color: "#445", marginTop: 2, textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</div>
     </div>
   );
 }
-
-function OutputGrid({ cards }) {
+function Quote({ text, source, color }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(90px,1fr))", gap: 6, marginTop: 10 }}>
-      {cards.map((c, i) => <OutputCard key={i} {...c} />)}
+    <div style={{ background: "#0c0d0f", border: `1px solid ${color}33`, borderLeft: `3px solid ${color}`, borderRadius: "0 8px 8px 0", padding: "10px 14px", margin: "10px 0", fontStyle: "italic", fontSize: 12, color: "#b0b8c4", lineHeight: 1.7 }}>
+      "{text}"
+      {source && <div style={{ fontStyle: "normal", fontSize: 10, color: color + "99", marginTop: 4 }}>— {source}</div>}
     </div>
   );
 }
-
-function InteractiveWrap({ label, color, children }) {
+function LabWrap({ title, color, children }) {
   return (
-    <div style={{ background: "#111317", border: `1px solid ${color}44`, borderRadius: 12, padding: 16, marginTop: 14 }}>
-      <div style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: "0.15em", color, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
-        {label}
-        <div style={{ flex: 1, height: 1, background: `${color}22` }} />
+    <div style={{ marginTop: 14, background: "#06080a", border: `1px solid ${color}22`, borderRadius: 12, overflow: "hidden" }}>
+      <div style={{ background: `linear-gradient(90deg,${color}18,transparent)`, padding: "8px 14px", borderBottom: `1px solid ${color}18`, fontFamily: "monospace", fontSize: 10, color, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+        ⚗ Interactive Lab · {title}
       </div>
-      {children}
+      <div style={{ padding: 14 }}>{children}</div>
     </div>
   );
 }
-
-// ─── Canvas helper hook ────────────────────────────────────────────────────────
 function useCanvas(draw, deps) {
   const ref = useRef(null);
   useEffect(() => {
-    const cv = ref.current;
-    if (!cv) return;
-    const ctx = cv.getContext("2d");
-    draw(ctx, cv.width, cv.height);
-  }, deps); // eslint-disable-line
+    const c = ref.current;
+    if (!c) return;
+    const dpr = window.devicePixelRatio || 1;
+    const W = c.clientWidth, H = c.clientHeight;
+    c.width = W * dpr; c.height = H * dpr;
+    const ctx = c.getContext("2d");
+    ctx.scale(dpr, dpr);
+    draw(ctx, W, H);
+  }, deps);
   return ref;
 }
 
-// ════════════════════════════════════════════════════════════════════════════════
-//  INTERACTIVE LABS
-// ════════════════════════════════════════════════════════════════════════════════
+// ─── LAB: Basis Function Regression ───────────────────────────────────────────
+function LabBasisRegression({ color }) {
+  const [K, setK] = useState(5);
+  const [noise, setNoise] = useState(0.3);
+  const seed = useRef(42);
+  const rng = useCallback(() => { seed.current = (seed.current * 1664525 + 1013904223) % 4294967296; return seed.current / 4294967296; }, []);
 
-// 1. Loss Surface
-function LossSurface({ color }) {
-  const [theta, setTheta] = useState(0.5);
-  const L = t => (t - 1) ** 2 + 0.3 * Math.sin(3 * t) + 0.5;
-  const dL = t => 2 * (t - 1) + 0.9 * Math.cos(3 * t);
-  const cvRef = useCanvas((ctx, W, H) => {
-    ctx.fillStyle = "#0d0f13"; ctx.fillRect(0, 0, W, H);
-    ctx.strokeStyle = "#1e2229"; ctx.lineWidth = 1;
-    for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
-    for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
-    const tx = t => (t + 3) / 6 * W, ty = v => H - 20 - (v / 4) * (H - 40);
+  const ref = useCanvas((ctx, W, H) => {
+    seed.current = 42;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = "#07090b"; ctx.fillRect(0, 0, W, H);
+    const N = 24;
+    const trueF = x => Math.sin(x * 2.5) * 0.7 + x * 0.3;
+    const xs = Array.from({ length: N }, () => (rng() * 2 - 1));
+    const ys = xs.map(x => trueF(x) + (rng() - 0.5) * noise * 2);
+    const toX = x => (x + 1.2) / 2.4 * (W - 40) + 20;
+    const toY = y => H / 2 - y * (H / 3.5);
+    // axes
+    ctx.strokeStyle = "#1e222a"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(20, H / 2); ctx.lineTo(W - 20, H / 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(W / 2, 10); ctx.lineTo(W / 2, H - 10); ctx.stroke();
+    // basis functions (gaussians)
+    const centers = Array.from({ length: K }, (_, i) => -1 + 2 * i / (K - 1));
+    const sigma = 2.5 / K;
+    const phi = x => centers.map(c => Math.exp(-((x - c) ** 2) / (2 * sigma ** 2)));
+    // solve w* via least squares (Φᵀ Φ w = Φᵀ y)
+    const Phi = xs.map(x => phi(x));
+    const PhiT_Phi = Array.from({ length: K }, (_, i) => Array.from({ length: K }, (_, j) => xs.reduce((s, _, n) => s + Phi[n][i] * Phi[n][j], 0)));
+    const PhiT_y = Array.from({ length: K }, (_, i) => xs.reduce((s, _, n) => s + Phi[n][i] * ys[n], 0));
+    // Gauss-Jordan
+    const M = PhiT_Phi.map((row, i) => [...row, PhiT_y[i]]);
+    for (let i = 0; i < K; i++) {
+      let max = i;
+      for (let j = i + 1; j < K; j++) if (Math.abs(M[j][i]) > Math.abs(M[max][i])) max = j;
+      [M[i], M[max]] = [M[max], M[i]];
+      if (Math.abs(M[i][i]) < 1e-10) continue;
+      for (let j = 0; j < K; j++) if (j !== i) { const f = M[j][i] / M[i][i]; for (let l = i; l <= K; l++) M[j][l] -= f * M[i][l]; }
+    }
+    const w = Array.from({ length: K }, (_, i) => M[i][K] / M[i][i]);
+    // draw individual basis functions (dim)
+    centers.forEach((c, k) => {
+      ctx.beginPath(); ctx.strokeStyle = color + "25"; ctx.lineWidth = 1;
+      for (let px = 0; px <= W - 40; px++) {
+        const x = px / (W - 40) * 2.4 - 1.2;
+        const y = Math.exp(-((x - c) ** 2) / (2 * sigma ** 2)) * w[k];
+        const method = px === 0 ? "moveTo" : "lineTo";
+        ctx[method](toX(x), toY(y));
+      }
+      ctx.stroke();
+    });
+    // true function
+    ctx.beginPath(); ctx.strokeStyle = "#334466"; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
+    for (let px = 0; px <= W - 40; px++) {
+      const x = px / (W - 40) * 2.4 - 1.2;
+      const method = px === 0 ? "moveTo" : "lineTo";
+      ctx[method](toX(x), toY(trueF(x)));
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+    // fitted curve
     ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2.5;
-    for (let i = 0; i <= 200; i++) { const t = -3 + i * 6 / 200; i === 0 ? ctx.moveTo(tx(t), ty(L(t))) : ctx.lineTo(tx(t), ty(L(t))); }
+    for (let px = 0; px <= W - 40; px++) {
+      const x = px / (W - 40) * 2.4 - 1.2;
+      const y = phi(x).reduce((s, v, i) => s + v * w[i], 0);
+      const method = px === 0 ? "moveTo" : "lineTo";
+      ctx[method](toX(x), toY(y));
+    }
     ctx.stroke();
-    const px = tx(theta), py = ty(L(theta));
-    const g = dL(theta), scale = 20;
-    ctx.beginPath(); ctx.strokeStyle = "#ff6b6b"; ctx.lineWidth = 2;
-    ctx.moveTo(px, py); ctx.lineTo(px - g * scale, py); ctx.stroke();
-    ctx.beginPath(); ctx.arc(px, py, 7, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill();
-  }, [theta, color]);
+    // data points
+    xs.forEach((x, i) => {
+      ctx.beginPath(); ctx.arc(toX(x), toY(ys[i]), 4, 0, Math.PI * 2);
+      ctx.fillStyle = "#fff"; ctx.fill();
+      ctx.strokeStyle = "#444"; ctx.lineWidth = 1; ctx.stroke();
+    });
+    // MSE
+    const fitted = xs.map(x => phi(x).reduce((s, v, i) => s + v * w[i], 0));
+    const mse = xs.reduce((s, _, i) => s + (ys[i] - fitted[i]) ** 2, 0) / N;
+    ctx.fillStyle = color + "cc"; ctx.font = "monospace 11px monospace";
+    ctx.fillText(`K=${K} basis fns  MSE=${mse.toFixed(3)}`, 28, 18);
+    ctx.fillStyle = "#334466"; ctx.fillText("--- true f(x)", W - 100, 18);
+  }, [K, noise]);
+
   return (
-    <InteractiveWrap label="LOSS SURFACE EXPLORER" color={color}>
-      <canvas ref={cvRef} width={420} height={200} style={{ width: "100%", maxWidth: 420, borderRadius: 8, display: "block" }} />
-      <Slider label="θ (parameter)" min={-3} max={3} val={theta} step={0.01} onChange={setTheta} color={color} />
-      <OutputGrid cards={[
-        { label: "Loss L(θ)", value: L(theta).toFixed(3), color },
-        { label: "Gradient ∂L/∂θ", value: dL(theta).toFixed(3), color: "#ff6b6b" },
-        { label: "θ after step (α=0.1)", value: (theta - 0.1 * dL(theta)).toFixed(3), color: "#888" }
-      ]} />
-    </InteractiveWrap>
+    <LabWrap title="Basis Function Regression §1.2" color={color}>
+      <canvas ref={ref} style={{ width: "100%", height: 220, display: "block", borderRadius: 8, marginBottom: 10 }} />
+      <Slider label="K (# basis functions)" min={2} max={18} val={K} onChange={setK} color={color} />
+      <Slider label="Noise σ" min={0.05} max={1.5} step={0.05} val={noise} onChange={setNoise} color={color} />
+      <p style={{ fontSize: 11, color: "#556", fontFamily: "monospace", margin: "6px 0 0" }}>
+        White dots = training data. Colored curve = fitted model. Dim curves = individual weighted basis fns.
+        Increase K → more flexible → risk of overfitting.
+      </p>
+    </LabWrap>
   );
 }
 
-// 2. Linear Regression
-const LR_PTS = [[1,14],[2,24],[3,31],[4,40],[5,48],[6,55],[7,65],[8,70],[9,80]];
-function LinearRegression({ color }) {
-  const [w, setW] = useState(8); const [b, setB] = useState(5);
-  const [running, setRunning] = useState(false);
-  const [steps, setSteps] = useState(0);
-  const animRef = useRef(null); const stateRef = useRef({ w: 8, b: 5 });
-  const mse = LR_PTS.reduce((s, [x, y]) => s + (y - (w * x + b)) ** 2, 0) / LR_PTS.length;
+// ─── LAB: Overfitting ─────────────────────────────────────────────────────────
+function LabOverfitting({ color }) {
+  const [capacity, setCapacity] = useState(6);
+  const [dataSize, setDataSize] = useState(20);
+  const ref = useCanvas((ctx, W, H) => {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = "#07090b"; ctx.fillRect(0, 0, W, H);
+    const maxEpochs = 80;
+    const trainLoss = [], valLoss = [];
+    for (let e = 0; e < maxEpochs; e++) {
+      const t = e / maxEpochs;
+      const capFactor = capacity / 10;
+      const dataFactor = dataSize / 50;
+      const tl = 0.9 * Math.exp(-t * (3 + capFactor * 2)) + 0.05;
+      const overfit = capFactor * Math.max(0, t - 0.3 / dataFactor) * (1 - dataFactor) * 1.2;
+      const vl = tl + overfit + 0.02 * Math.sin(e * 0.4);
+      trainLoss.push(Math.max(0.04, tl));
+      valLoss.push(Math.max(0.05, Math.min(1.5, vl)));
+    }
+    const toX = e => e / maxEpochs * (W - 40) + 20;
+    const toY = v => H - 24 - v / 1.2 * (H - 40);
+    // axes
+    ctx.strokeStyle = "#1e222a"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(20, H - 24); ctx.lineTo(W - 10, H - 24); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(20, 10); ctx.lineTo(20, H - 24); ctx.stroke();
+    ctx.fillStyle = "#334"; ctx.font = "10px monospace";
+    ctx.fillText("epochs →", W - 80, H - 8);
+    ctx.fillText("loss", 24, 18);
+    // overfitting zone highlight
+    const overStart = Math.floor(0.3 / (dataSize / 50) * maxEpochs);
+    if (overStart < maxEpochs && capacity > 5 && dataSize < 35) {
+      ctx.fillStyle = "rgba(255,80,80,0.04)";
+      ctx.fillRect(toX(overStart), 10, toX(maxEpochs - 1) - toX(overStart), H - 34);
+      ctx.fillStyle = "#ff505066"; ctx.font = "9px monospace";
+      ctx.fillText("OVERFITTING", toX(overStart) + 4, 24);
+    }
+    // train loss
+    ctx.beginPath(); ctx.strokeStyle = "#4a9aff"; ctx.lineWidth = 2;
+    trainLoss.forEach((v, e) => { const m = e === 0 ? "moveTo" : "lineTo"; ctx[m](toX(e), toY(v)); });
+    ctx.stroke();
+    ctx.fillStyle = "#4a9aff"; ctx.font = "10px monospace"; ctx.fillText("train", W - 60, 36);
+    // val loss
+    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2;
+    valLoss.forEach((v, e) => { const m = e === 0 ? "moveTo" : "lineTo"; ctx[m](toX(e), toY(v)); });
+    ctx.stroke();
+    ctx.fillStyle = color; ctx.fillText("val", W - 60, 50);
+  }, [capacity, dataSize]);
 
-  const cvRef = useCanvas((ctx, W, H) => {
-    ctx.fillStyle = "#0d0f13"; ctx.fillRect(0, 0, W, H);
-    ctx.strokeStyle = "#1e2229"; ctx.lineWidth = 1;
-    for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
-    const sx = p => (p / 11) * W * 0.9 + 20, sy = p => H - 20 - (p / 90) * (H - 40);
-    LR_PTS.forEach(([x, y]) => {
-      const yh = w * x + b;
-      ctx.strokeStyle = "rgba(255,100,100,0.3)"; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(sx(x), sy(y)); ctx.lineTo(sx(x), sy(yh)); ctx.stroke();
-    });
-    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2.5;
-    ctx.moveTo(sx(0), sy(b)); ctx.lineTo(sx(10), sy(w * 10 + b)); ctx.stroke();
-    LR_PTS.forEach(([x, y]) => {
-      ctx.beginPath(); ctx.arc(sx(x), sy(y), 5, 0, Math.PI * 2); ctx.fillStyle = "#e0e0ff"; ctx.fill();
-    });
-  }, [w, b, color]);
-
-  const runGD = useCallback(() => {
-    if (running) { setRunning(false); cancelAnimationFrame(animRef.current); return; }
-    setRunning(true); stateRef.current = { w, b };
-    const step = () => {
-      const { w: cw, b: cb } = stateRef.current;
-      const lr = 0.002, n = LR_PTS.length;
-      let dw = 0, db = 0;
-      LR_PTS.forEach(([x, y]) => { const e = (cw * x + cb) - y; dw += e * x; db += e; });
-      const nw = cw - lr * dw / n, nb = cb - lr * db / n;
-      stateRef.current = { w: nw, b: nb };
-      setW(nw); setB(nb); setSteps(s => s + 1);
-      const mseNow = LR_PTS.reduce((s, [x, y]) => s + (y - (nw * x + nb)) ** 2, 0) / LR_PTS.length;
-      if (mseNow > 0.5) animRef.current = requestAnimationFrame(step);
-      else setRunning(false);
-    };
-    animRef.current = requestAnimationFrame(step);
-  }, [running, w, b]);
-
-  useEffect(() => () => cancelAnimationFrame(animRef.current), []);
+  const overfit = capacity > 7 && dataSize < 25;
+  const underfit = capacity < 3;
 
   return (
-    <InteractiveWrap label="LINEAR REGRESSION — MANUAL & AUTO FIT" color={color}>
-      <canvas ref={cvRef} width={420} height={200} style={{ width: "100%", maxWidth: 420, borderRadius: 8, display: "block", marginBottom: 10 }} />
-      <Slider label="weight w" min={-5} max={15} val={w} step={0.1} onChange={v => { setW(v); setSteps(0); }} color={color} />
-      <Slider label="bias b" min={-20} max={40} val={b} step={0.5} onChange={v => { setB(v); setSteps(0); }} color={color} />
-      <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-        <button onClick={runGD} style={{ padding: "7px 14px", borderRadius: 7, border: `1px solid ${color}`, background: running ? color : "transparent", color: running ? "#000" : color, fontFamily: "monospace", fontSize: 11, cursor: "pointer" }}>
-          {running ? "⏸ Pause" : "▶ Run Gradient Descent"}
-        </button>
-        <button onClick={() => { cancelAnimationFrame(animRef.current); setRunning(false); setW(8); setB(5); setSteps(0); }} style={{ padding: "7px 14px", borderRadius: 7, border: `1px solid #444`, background: "transparent", color: "#888", fontFamily: "monospace", fontSize: 11, cursor: "pointer" }}>Reset</button>
+    <LabWrap title="Bias-Variance Tradeoff §1.3" color={color}>
+      <canvas ref={ref} style={{ width: "100%", height: 200, display: "block", borderRadius: 8, marginBottom: 10 }} />
+      <Slider label="Model capacity" min={1} max={10} val={capacity} onChange={setCapacity} color={color} />
+      <Slider label="Training data size" min={5} max={50} val={dataSize} onChange={setDataSize} color={color} />
+      <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+        {underfit && <div style={{ background: "#ff881122", border: "1px solid #ff881144", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontFamily: "monospace", color: "#ff8811" }}>⚠ Underfitting: capacity too low</div>}
+        {overfit && <div style={{ background: "#ff444422", border: "1px solid #ff444444", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontFamily: "monospace", color: "#ff6666" }}>🔥 Overfitting: val loss diverging</div>}
+        {!underfit && !overfit && <div style={{ background: "#44ff8822", border: "1px solid #44ff8844", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontFamily: "monospace", color: "#44ff88" }}>✓ Good generalization</div>}
       </div>
-      <OutputGrid cards={[
-        { label: "MSE Loss", value: mse.toFixed(1), color },
-        { label: "w (weight)", value: w.toFixed(2), color: "#aaa" },
-        { label: "b (bias)", value: b.toFixed(2), color: "#aaa" },
-        { label: "GD Steps", value: steps, color: "#666" }
-      ]} />
-    </InteractiveWrap>
+    </LabWrap>
   );
 }
 
-// 3. Gradient Descent
-function GradientDescent({ color }) {
-  const [lr, setLr] = useState(0.3);
-  const [start, setStart] = useState(2.5);
+// ─── LAB: Gradient Descent ────────────────────────────────────────────────────
+function LabGradientDescent({ color }) {
+  const [lr, setLr] = useState(0.08);
   const [opt, setOpt] = useState("SGD");
-  const [trail, setTrail] = useState([]);
-  const L = t => (t - 1) ** 2 + 0.5 * Math.sin(5 * t) + 0.3 * Math.cos(t) + 1;
-  const dL = t => 2 * (t - 1) + 2.5 * Math.cos(5 * t) - 0.3 * Math.sin(t);
+  const [step, setStep] = useState(0);
+  const maxSteps = 60;
+  const landscape = useCallback((x, y) => {
+    return Math.sin(x * 1.5) * Math.cos(y) * 0.8 + 0.3 * (x * x + y * y) * 0.12 + 0.5 * Math.cos(x * 2.5 + 0.5) * 0.4;
+  }, []);
+  const grad = useCallback((x, y) => {
+    const h = 0.001;
+    return [(landscape(x + h, y) - landscape(x - h, y)) / (2 * h), (landscape(x, y + h) - landscape(x, y - h)) / (2 * h)];
+  }, [landscape]);
 
-  const cvRef = useCanvas((ctx, W, H) => {
-    ctx.fillStyle = "#0d0f13"; ctx.fillRect(0, 0, W, H);
-    ctx.strokeStyle = "#1e2229"; ctx.lineWidth = 1;
-    for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
-    const tx = t => (t + 3.5) / 7.5 * W, ty = v => H - 20 - (v / 5) * (H - 40);
-    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2.5;
-    for (let i = 0; i <= 300; i++) { const t = -3.5 + i * 7.5 / 300; i === 0 ? ctx.moveTo(tx(t), ty(L(t))) : ctx.lineTo(tx(t), ty(L(t))); }
-    ctx.stroke();
-    ctx.strokeStyle = "#333"; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
-    ctx.beginPath(); ctx.moveTo(tx(0.92), 20); ctx.lineTo(tx(0.92), H); ctx.stroke();
-    ctx.setLineDash([]);
-    if (trail.length > 1) {
-      ctx.beginPath(); ctx.strokeStyle = "rgba(255,200,80,0.7)"; ctx.lineWidth = 1.5;
-      trail.forEach((p, i) => i === 0 ? ctx.moveTo(tx(p[0]), ty(p[1])) : ctx.lineTo(tx(p[0]), ty(p[1])));
-      ctx.stroke();
-    }
-    if (trail.length) {
-      const [th] = trail[trail.length - 1];
-      ctx.beginPath(); ctx.arc(tx(th), ty(L(th)), 7, 0, Math.PI * 2); ctx.fillStyle = "#ffb347"; ctx.fill();
-    }
-  }, [trail, color]);
-
-  const run = () => {
-    let theta = start, m = 0, v2 = 0, t2 = 0;
-    const h = [[theta, L(theta)]];
-    for (let i = 0; i < 200; i++) {
-      const g = dL(theta);
-      if (opt === "SGD") { theta -= lr * g; }
-      else if (opt === "Momentum") { m = 0.9 * m + g; theta -= lr * m; }
-      else { t2++; m = 0.9 * m + 0.1 * g; v2 = 0.999 * v2 + 0.001 * g * g; const mh = m / (1 - 0.9 ** t2), vh = v2 / (1 - 0.999 ** t2); theta -= lr * mh / (Math.sqrt(vh) + 1e-8); }
-      h.push([theta, L(theta)]);
-      if (Math.abs(dL(theta)) < 0.005) break;
-    }
-    setTrail(h);
-  };
-
-  const last = trail[trail.length - 1];
-  return (
-    <InteractiveWrap label="GRADIENT DESCENT — OPTIMIZER COMPARISON" color={color}>
-      <canvas ref={cvRef} width={420} height={220} style={{ width: "100%", maxWidth: 420, borderRadius: 8, display: "block" }} />
-      <Slider label="learning rate α" min={0.01} max={1.5} val={lr} step={0.01} onChange={setLr} color={color} />
-      <Slider label="starting θ₀" min={-3} max={3} val={start} step={0.1} onChange={v => { setStart(v); setTrail([[v, L(v)]]); }} color={color} />
-      <BtnRow options={["SGD", "Momentum", "Adam"]} active={opt} onSelect={setOpt} color={color} />
-      <div style={{ display: "flex", gap: 8 }}>
-        <button onClick={run} style={{ padding: "7px 14px", borderRadius: 7, border: `1px solid ${color}`, background: "transparent", color, fontFamily: "monospace", fontSize: 11, cursor: "pointer" }}>▶ Run</button>
-        <button onClick={() => { setTrail([[start, L(start)]]); }} style={{ padding: "7px 14px", borderRadius: 7, border: "1px solid #444", background: "transparent", color: "#888", fontFamily: "monospace", fontSize: 11, cursor: "pointer" }}>Clear</button>
-      </div>
-      <OutputGrid cards={[
-        { label: "θ current", value: last ? last[0].toFixed(3) : "-", color },
-        { label: "Loss", value: last ? last[1].toFixed(3) : "-", color: "#aaa" },
-        { label: "Steps", value: trail.length ? trail.length - 1 : 0, color: "#666" }
-      ]} />
-    </InteractiveWrap>
-  );
-}
-
-// 4. Logistic
-const LOG_PTS = [[-2.2,0],[-1.8,0],[-1.5,0],[-1.0,0],[-0.5,0],[0.2,0],[0.5,1],[1.0,1],[1.5,1],[2.0,1],[2.5,1],[3.0,1]];
-function Logistic({ color }) {
-  const [w, setW] = useState(2); const [b, setB] = useState(-1); const [thresh, setThresh] = useState(0.5);
-  const sig = z => 1 / (1 + Math.exp(-z));
-  const xb = (-Math.log(1 / thresh - 1) - b) / w;
-  const correct = LOG_PTS.filter(([x, y]) => (sig(w * x + b) >= thresh ? 1 : 0) === y).length;
-
-  const cvRef = useCanvas((ctx, W, H) => {
-    ctx.fillStyle = "#0d0f13"; ctx.fillRect(0, 0, W, H);
-    ctx.strokeStyle = "#1e2229"; ctx.lineWidth = 1;
-    for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
-    const sx = x => (x + 3.5) / 7.5 * W, sy = p => H - 20 - p * (H - 40);
-    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2.5;
-    for (let i = 0; i <= 200; i++) { const x = -3.5 + i * 7.5 / 200, p = sig(w * x + b); i === 0 ? ctx.moveTo(sx(x), sy(p)) : ctx.lineTo(sx(x), sy(p)); }
-    ctx.stroke();
-    ctx.strokeStyle = "#555"; ctx.lineWidth = 1; ctx.setLineDash([5, 5]);
-    ctx.beginPath(); ctx.moveTo(0, sy(thresh)); ctx.lineTo(W, sy(thresh)); ctx.stroke();
-    ctx.setLineDash([]);
-    if (isFinite(xb)) { ctx.strokeStyle = "#ff6b6b"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(sx(xb), 20); ctx.lineTo(sx(xb), H); ctx.stroke(); }
-    LOG_PTS.forEach(([x, y]) => {
-      const p = sig(w * x + b), pred = p >= thresh ? 1 : 0;
-      ctx.beginPath(); ctx.arc(sx(x), sy(0.1 + y * 0.8), 6, 0, Math.PI * 2);
-      ctx.fillStyle = y === 1 ? "#4fffb0" : "#ff7043"; ctx.fill();
-      if (pred !== y) { ctx.strokeStyle = "#ff0000"; ctx.lineWidth = 2; ctx.stroke(); }
-    });
-  }, [w, b, thresh, color]);
-
-  return (
-    <InteractiveWrap label="LOGISTIC REGRESSION — DECISION BOUNDARY" color={color}>
-      <canvas ref={cvRef} width={420} height={200} style={{ width: "100%", maxWidth: 420, borderRadius: 8, display: "block", marginBottom: 8 }} />
-      <Slider label="weight w" min={-5} max={5} val={w} step={0.1} onChange={setW} color={color} />
-      <Slider label="bias b" min={-5} max={5} val={b} step={0.1} onChange={setB} color={color} />
-      <Slider label="threshold" min={0.1} max={0.9} val={thresh} step={0.01} onChange={setThresh} color={color} />
-      <OutputGrid cards={[
-        { label: "Boundary x", value: isFinite(xb) ? xb.toFixed(2) : "∞", color },
-        { label: "Accuracy", value: Math.round(correct / LOG_PTS.length * 100) + "%", color: "#aaa" }
-      ]} />
-    </InteractiveWrap>
-  );
-}
-
-// 5. Neuron
-const ACT = {
-  relu: { fn: z => Math.max(0, z), d: z => z > 0 ? 1 : 0 },
-  sigmoid: { fn: z => 1 / (1 + Math.exp(-z)), d: z => { const s = 1 / (1 + Math.exp(-z)); return s * (1 - s); } },
-  tanh: { fn: z => Math.tanh(z), d: z => 1 - Math.tanh(z) ** 2 },
-  gelu: { fn: z => z * 0.5 * (1 + Math.tanh(0.7978846 * (z + 0.044715 * z ** 3))), d: z => { const v = 0.5 * (1 + Math.tanh(0.7978846 * (z + 0.044715 * z ** 3))); return v + z * 0.5 * (1 - v * v) * 0.7978846 * (1 + 3 * 0.044715 * z ** 2); } }
-};
-
-function Neuron({ color }) {
-  const [xs, setXs] = useState([0.8, -0.3, 0.5]);
-  const [ws, setWs] = useState([0.6, 0.9, -0.4]);
-  const [bias, setBias] = useState(0.1);
-  const [act, setAct] = useState("relu");
-  const z = xs.reduce((s, x, i) => s + x * ws[i], bias);
-  const { fn, d } = ACT[act];
-  const out = fn(z), grad = d(z);
-
-  const actCvRef = useCanvas((ctx, W, H) => {
-    ctx.fillStyle = "#0d0f13"; ctx.fillRect(0, 0, W, H);
-    ctx.strokeStyle = "#1e2229"; ctx.lineWidth = 1;
-    for (let x = 0; x < W; x += 44) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
-    ctx.strokeStyle = "#333"; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0, H / 2); ctx.lineTo(W, H / 2); ctx.stroke();
-    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2;
-    for (let i = 0; i <= 200; i++) { const zz = -4 + i * 8 / 200, y = fn(zz), px = W / 2 + zz / 4 * W / 2, py = H / 2 - y * H / 2.5; i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py); }
-    ctx.stroke();
-    const px = Math.max(5, Math.min(W - 5, W / 2 + z / 4 * W / 2));
-    const py = Math.max(5, Math.min(H - 5, H / 2 - out * H / 2.5));
-    ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill();
-    ctx.fillStyle = "#555"; ctx.font = "9px monospace";
-    ctx.fillText(`${act}(z)  — f'(z) = ${grad.toFixed(2)}`, 8, H - 6);
-  }, [z, out, act, color]);
-
-  return (
-    <InteractiveWrap label="ARTIFICIAL NEURON — INPUTS, WEIGHTS, ACTIVATION" color={color}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
-        {[0, 1, 2].map(i => (
-          <div key={i} style={{ background: "#0d0f13", borderRadius: 8, padding: 10, border: "1px solid #1e2229" }}>
-            <div style={{ fontFamily: "monospace", fontSize: 9, color: "#555", marginBottom: 4 }}>Input / Weight {i + 1}</div>
-            <Slider label={`x${i+1}`} min={-2} max={2} val={xs[i]} step={0.1} onChange={v => setXs(p => p.map((x, j) => j === i ? v : x))} color="#88aaff" />
-            <Slider label={`w${i+1}`} min={-2} max={2} val={ws[i]} step={0.1} onChange={v => setWs(p => p.map((x, j) => j === i ? v : x))} color={color} />
-          </div>
-        ))}
-        <Slider label="bias b" min={-2} max={2} val={bias} step={0.1} onChange={setBias} color="#ff9a9a" />
-        <BtnRow options={["relu", "sigmoid", "tanh", "gelu"]} active={act} onSelect={setAct} color={color} />
-      </div>
-      <canvas ref={actCvRef} width={420} height={80} style={{ width: "100%", maxWidth: 420, borderRadius: 8, display: "block", marginTop: 10 }} />
-      <OutputGrid cards={[
-        { label: "z = w·x + b", value: z.toFixed(3), color: "#aaa" },
-        { label: `output f(z)`, value: out.toFixed(3), color },
-        { label: "f'(z) gradient", value: grad.toFixed(3), color: "#ff9a9a" }
-      ]} />
-    </InteractiveWrap>
-  );
-}
-
-// 6. MLP
-function MLP({ color }) {
-  const [layers, setLayers] = useState(3);
-  const [neurons, setNeurons] = useState(64);
-  const [inputDim, setInputDim] = useState(128);
-  const [outputDim, setOutputDim] = useState(10);
-  const dims = [inputDim, ...Array(layers).fill(neurons), outputDim];
-  let params = 0, flops = 0;
-  for (let i = 0; i < dims.length - 1; i++) { params += dims[i] * dims[i + 1] + dims[i + 1]; flops += 2 * dims[i] * dims[i + 1]; }
-  const fmt = n => n >= 1e9 ? `${(n / 1e9).toFixed(2)}B` : n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : `${n}`;
-
-  const cvRef = useCanvas((ctx, W, H) => {
-    ctx.fillStyle = "#0d0f13"; ctx.fillRect(0, 0, W, H);
-    const maxShow = 8, numL = dims.length;
-    const lx = i => 30 + i * (W - 60) / (numL - 1);
-    const ny = (n, j) => H / 2 + (j - (Math.min(n, maxShow) - 1) / 2) * (H - 40) / maxShow;
-    ctx.globalAlpha = 0.08; ctx.strokeStyle = color; ctx.lineWidth = 0.5;
-    for (let l = 0; l < numL - 1; l++) {
-      const n1 = Math.min(dims[l], maxShow), n2 = Math.min(dims[l + 1], maxShow);
-      for (let a = 0; a < n1; a++) for (let bk = 0; bk < n2; bk++) {
-        ctx.beginPath(); ctx.moveTo(lx(l), ny(dims[l], a)); ctx.lineTo(lx(l + 1), ny(dims[l + 1], bk)); ctx.stroke();
-      }
-    }
-    ctx.globalAlpha = 1;
-    dims.forEach((n, l) => {
-      const show = Math.min(n, maxShow);
-      for (let j = 0; j < show; j++) {
-        ctx.beginPath(); ctx.arc(lx(l), ny(n, j), l === 0 || l === numL - 1 ? 5 : 4, 0, Math.PI * 2);
-        ctx.fillStyle = l === 0 ? "#e0e0ff" : l === numL - 1 ? "#ffb347" : color; ctx.fill();
-      }
-      if (n > maxShow) { ctx.fillStyle = "#555"; ctx.font = "10px monospace"; ctx.textAlign = "center"; ctx.fillText("...", lx(l), H - 8); }
-      ctx.fillStyle = l === 0 ? "#7070aa" : l === numL - 1 ? "#aa7030" : color;
-      ctx.font = "9px monospace"; ctx.textAlign = "center";
-      ctx.fillText(n <= 999 ? n : "1K+", lx(l), H - 2);
-      ctx.textAlign = "left";
-    });
-  }, [dims.join(","), color]);
-
-  return (
-    <InteractiveWrap label="MLP ARCHITECTURE — DESIGN & PARAMETER COUNT" color={color}>
-      <Slider label="Hidden layers" min={1} max={6} val={layers} step={1} onChange={setLayers} color={color} />
-      <Slider label="Neurons per layer" min={4} max={512} val={neurons} step={4} onChange={setNeurons} color={color} />
-      <Slider label="Input dim" min={1} max={1024} val={inputDim} step={1} onChange={setInputDim} color={color} />
-      <Slider label="Output dim" min={1} max={100} val={outputDim} step={1} onChange={setOutputDim} color={color} />
-      <canvas ref={cvRef} width={420} height={200} style={{ width: "100%", maxWidth: 420, borderRadius: 8, display: "block", margin: "10px 0" }} />
-      <OutputGrid cards={[
-        { label: "Total Params", value: fmt(params), color },
-        { label: "FLOPs (fwd)", value: fmt(flops), color: "#aaa" },
-        { label: "Memory fp32", value: `${(params * 4 / 1e6).toFixed(1)}MB`, color: "#888" }
-      ]} />
-    </InteractiveWrap>
-  );
-}
-
-// 7. Backprop
-function Backprop({ color }) {
-  const [numLayers, setNumLayers] = useState(8);
-  const [actFn, setActFn] = useState("sigmoid");
-  const avgGrad = { sigmoid: 0.25, relu: 0.5, tanh: 0.42 };
-  const g = avgGrad[actFn];
-  const grads = Array.from({ length: numLayers }, (_, i) => Math.pow(g, numLayers - 1 - i));
-
-  const cvRef = useCanvas((ctx, W, H) => {
-    ctx.fillStyle = "#0d0f13"; ctx.fillRect(0, 0, W, H);
-    const bw = (W - 40) / numLayers;
-    const cols = { sigmoid: "255,112,67", relu: "79,255,176", tanh: "124,131,253" };
-    grads.forEach((gv, i) => {
-      const x = 20 + i * bw, barH = Math.max(1, (gv / 1) * (H - 50));
-      const alpha = Math.min(1, 0.2 + gv * 3);
-      ctx.fillStyle = `rgba(${cols[actFn]},${alpha})`;
-      ctx.fillRect(x, H - 30 - barH, bw - 3, barH);
-      if (i === 0 || i === numLayers - 1 || i === Math.floor(numLayers / 2)) {
-        ctx.fillStyle = "#555"; ctx.font = "8px monospace"; ctx.textAlign = "center";
-        ctx.fillText(`L${i + 1}`, x + bw / 2, H - 16);
-        ctx.fillText(gv.toExponential(0), x + bw / 2, H - 4);
-      }
-    });
-    ctx.fillStyle = "#555"; ctx.font = "9px monospace"; ctx.textAlign = "left";
-    ctx.fillText(`← gradient flows backward (shrinks ~${g}× per ${actFn} layer)`, 8, 14);
-    ctx.textAlign = "left";
-  }, [numLayers, actFn, color]);
-
-  return (
-    <InteractiveWrap label="BACKPROP — GRADIENT FLOW & VANISHING GRADIENTS" color={color}>
-      <p style={{ fontSize: 12, color: "#888", marginBottom: 8 }}>Watch how gradients shrink backwards through activations</p>
-      <Slider label="Num layers" min={2} max={15} val={numLayers} step={1} onChange={setNumLayers} color={color} />
-      <BtnRow options={["sigmoid", "relu", "tanh"]} active={actFn} onSelect={setActFn} color={color} />
-      <canvas ref={cvRef} width={420} height={160} style={{ width: "100%", maxWidth: 420, borderRadius: 8, display: "block", margin: "8px 0" }} />
-      <OutputGrid cards={[
-        { label: "Grad at layer 1", value: grads[0].toExponential(2), color },
-        { label: "Grad at last layer", value: grads[numLayers - 1].toExponential(2), color: "#ff6b6b" },
-        { label: "Shrinkage ratio", value: `${(grads[0] / (grads[numLayers - 1] || 1e-20)).toExponential(1)}×`, color: "#aaa" }
-      ]} />
-    </InteractiveWrap>
-  );
-}
-
-// 8. Regularization
-function Regularization({ color }) {
-  const [cap, setCap] = useState(5);
-  const [data, setData] = useState(200);
-  const [drop, setDrop] = useState(0);
-  const [l2, setL2] = useState(0);
-  const epochs = 50;
-  const overfit = cap * 50 / data;
-  const reg = drop * 0.6 + l2 * 2;
-  const trainLoss = Array.from({ length: epochs }, (_, e) => Math.exp(-(e + 1) * 0.12) * 0.8 + 0.08);
-  const valLoss = trainLoss.map((t, e) => t + Math.max(0, (overfit - reg) * 0.3 * (1 - Math.exp(-(e + 1) * 0.08))));
-  const tf = trainLoss[epochs - 1], vf = valLoss[epochs - 1];
-  const state = vf - tf < 0.02 ? "Good fit" : vf - tf < 0.08 ? "Slight overfit" : "Overfit!";
-  const stateColor = state === "Good fit" ? color : state === "Slight overfit" ? "#ffb347" : "#ff6b6b";
-
-  const cvRef = useCanvas((ctx, W, H) => {
-    ctx.fillStyle = "#0d0f13"; ctx.fillRect(0, 0, W, H);
-    ctx.strokeStyle = "#1e2229"; ctx.lineWidth = 1;
-    for (let x = 0; x < W; x += 44) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
-    const maxL = Math.max(...trainLoss, ...valLoss);
-    const sx = e => (e / epochs) * (W - 40) + 20, sy = l => H - 20 - (l / maxL) * (H - 40);
-    [[trainLoss, color, "Train"], [valLoss, "#ff6b6b", "Val"]].forEach(([arr, c, lbl]) => {
-      ctx.beginPath(); ctx.strokeStyle = c; ctx.lineWidth = 2;
-      arr.forEach((l, i) => i === 0 ? ctx.moveTo(sx(i + 1), sy(l)) : ctx.lineTo(sx(i + 1), sy(l)));
-      ctx.stroke();
-      ctx.fillStyle = c; ctx.font = "10px monospace"; ctx.fillText(lbl, W - 35, lbl === "Train" ? 18 : 30);
-    });
-    ctx.fillStyle = "#555"; ctx.font = "9px monospace"; ctx.fillText("Epoch →", W / 2 - 20, H - 4);
-  }, [cap, data, drop, l2, color]);
-
-  return (
-    <InteractiveWrap label="OVERFITTING & REGULARIZATION" color={color}>
-      <Slider label="Model capacity" min={1} max={10} val={cap} step={1} onChange={setCap} color={color} />
-      <Slider label="Training data size" min={50} max={2000} val={data} step={50} onChange={setData} color={color} />
-      <Slider label="Dropout rate p" min={0} max={0.8} val={drop} step={0.05} onChange={setDrop} color={color} />
-      <Slider label="L2 weight decay λ" min={0} max={0.5} val={l2} step={0.01} onChange={setL2} color={color} />
-      <canvas ref={cvRef} width={420} height={180} style={{ width: "100%", maxWidth: 420, borderRadius: 8, display: "block", margin: "8px 0" }} />
-      <OutputGrid cards={[
-        { label: "Train Loss", value: tf.toFixed(3), color },
-        { label: "Val Loss", value: vf.toFixed(3), color: "#ff6b6b" },
-        { label: "Gap", value: (vf - tf).toFixed(3), color: "#aaa" },
-        { label: "State", value: state, color: stateColor }
-      ]} />
-    </InteractiveWrap>
-  );
-}
-
-// 9. Param Sharing
-function ParamSharing({ color }) {
-  const [size, setSize] = useState(64);
-  const [filters, setFilters] = useState(32);
-  const [kernel, setKernel] = useState(3);
-  const [hidden, setHidden] = useState(512);
-  const inp = size * size * 3;
-  const fcP = inp * hidden + hidden;
-  const convP = kernel * kernel * 3 * filters + filters;
-  const fmt = n => n >= 1e9 ? `${(n / 1e9).toFixed(2)}B` : n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : `${n}`;
-  return (
-    <InteractiveWrap label="PARAMETER SHARING — FC vs CNN" color={color}>
-      <Slider label="Image size W×W" min={16} max={256} val={size} step={8} onChange={setSize} color={color} />
-      <Slider label="Num filters" min={1} max={256} val={filters} step={1} onChange={setFilters} color={color} />
-      <Slider label="Kernel size k×k" min={1} max={11} val={kernel} step={2} onChange={setKernel} color={color} />
-      <Slider label="FC hidden units" min={64} max={4096} val={hidden} step={64} onChange={setHidden} color={color} />
-      <OutputGrid cards={[
-        { label: "FC Layer Params", value: fmt(fcP), color: "#ff6b6b" },
-        { label: "Conv Layer Params", value: fmt(convP), color },
-        { label: "FC/Conv ratio", value: Math.round(fcP / convP) + "×", color: "#ffb347" },
-        { label: "Param saving", value: `${((1 - convP / fcP) * 100).toFixed(1)}%`, color: "#aaa" }
-      ]} />
-    </InteractiveWrap>
-  );
-}
-
-// 10. Convolution
-const KERNELS = {
-  "edge h": [[1, 2, 1], [0, 0, 0], [-1, -2, -1]],
-  "edge v": [[1, 0, -1], [2, 0, -2], [1, 0, -1]],
-  blur: [[1/9,1/9,1/9],[1/9,1/9,1/9],[1/9,1/9,1/9]],
-  sharpen: [[0,-1,0],[-1,5,-1],[0,-1,0]]
-};
-function Convolution({ color }) {
-  const SZ = 8;
-  const [grid, setGrid] = useState(() => Array.from({ length: SZ }, (_, r) => Array.from({ length: SZ }, (_, c) => (r === 3 || r === 4) ? 1 : ((c === 3 || c === 4) && r > 1 && r < 6 ? 0.5 : 0))));
-  const [curK, setCurK] = useState("edge h");
-  const K = KERNELS[curK];
-  const outsz = SZ - 3 + 1;
-  const outVals = Array.from({ length: outsz }, (_, r) => Array.from({ length: outsz }, (_, c) => { let s = 0; for (let m = 0; m < 3; m++) for (let n = 0; n < 3; n++) s += grid[r + m][c + n] * K[m][n]; return s; }));
-  const flat = outVals.flat(), mn = Math.min(...flat), mx = Math.max(...flat);
-
-  const inCvRef = useCanvas((ctx, W, H) => {
-    ctx.fillStyle = "#0d0f13"; ctx.fillRect(0, 0, W, H);
-    const cell = W / SZ;
-    grid.forEach((row, r) => row.forEach((v, c) => {
-      ctx.fillStyle = `rgba(124,131,253,${v})`; ctx.fillRect(c * cell + 1, r * cell + 1, cell - 2, cell - 2);
-    }));
-    ctx.strokeStyle = "#1e2229"; ctx.lineWidth = 0.5;
-    for (let i = 1; i < SZ; i++) { ctx.beginPath(); ctx.moveTo(i * cell, 0); ctx.lineTo(i * cell, H); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, i * cell); ctx.lineTo(W, i * cell); ctx.stroke(); }
-  }, [grid, color]);
-
-  const kCvRef = useCanvas((ctx, W, H) => {
-    ctx.fillStyle = "#0d0f13"; ctx.fillRect(0, 0, W, H);
-    const kc = W / 3;
-    const flat2 = K.flat(), mn2 = Math.min(...flat2), mx2 = Math.max(...flat2);
-    K.forEach((row, r) => row.forEach((v, c) => {
-      const norm = (v - mn2) / (mx2 - mn2 || 1);
-      ctx.fillStyle = `rgba(255,180,70,${norm})`; ctx.fillRect(c * kc + 1, r * kc + 1, kc - 2, kc - 2);
-      ctx.fillStyle = "#fff"; ctx.font = "9px monospace"; ctx.textAlign = "center";
-      ctx.fillText(v.toFixed(1), (c + 0.5) * kc, (r + 0.5) * kc + 3);
-    }));
-  }, [curK]);
-
-  const outCvRef = useCanvas((ctx, W, H) => {
-    ctx.fillStyle = "#0d0f13"; ctx.fillRect(0, 0, W, H);
-    const oc = W / outsz;
-    outVals.forEach((row, r) => row.forEach((v, c) => {
-      const norm = (v - mn) / (mx - mn || 1);
-      ctx.fillStyle = `rgba(124,131,253,${norm})`; ctx.fillRect(c * oc + 1, r * oc + 1, oc - 2, oc - 2);
-    }));
-  }, [outVals.flat().join(",")]);
-
-  const handleClick = (e) => {
-    const cv = e.currentTarget; const rect = cv.getBoundingClientRect();
-    const scale = SZ / rect.width;
-    const c = Math.floor((e.clientX - rect.left) * scale), r = Math.floor((e.clientY - rect.top) * scale);
-    if (r >= 0 && r < SZ && c >= 0 && c < SZ) setGrid(g => g.map((row, ri) => row.map((v, ci) => ri === r && ci === c ? (v > 0.5 ? 0 : 1) : v)));
-  };
-
-  return (
-    <InteractiveWrap label="CONVOLUTION — CLICK PIXELS, WATCH FEATURE MAP" color={color}>
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
-        <div><div style={{ fontFamily: "monospace", fontSize: 9, color: "#555", marginBottom: 4 }}>INPUT (click)</div><canvas ref={inCvRef} onClick={handleClick} width={160} height={160} style={{ cursor: "pointer", borderRadius: 6, border: "1px solid #222", display: "block" }} /></div>
-        <div><div style={{ fontFamily: "monospace", fontSize: 9, color: "#555", marginBottom: 4 }}>KERNEL</div><canvas ref={kCvRef} width={90} height={90} style={{ borderRadius: 6, border: "1px solid #222", display: "block" }} /></div>
-        <div><div style={{ fontFamily: "monospace", fontSize: 9, color: "#555", marginBottom: 4 }}>OUTPUT</div><canvas ref={outCvRef} width={160} height={160} style={{ borderRadius: 6, border: "1px solid #222", display: "block" }} /></div>
-      </div>
-      <BtnRow options={Object.keys(KERNELS)} active={curK} onSelect={setCurK} color={color} />
-      <OutputGrid cards={[{ label: "Output size", value: `${outsz}×${outsz}`, color }, { label: "Kernel params", value: 9, color: "#aaa" }]} />
-    </InteractiveWrap>
-  );
-}
-
-// 11. Attention
-const ATT_TOKENS = ["The", "cat", "sat", "on", "mat", "it", "was", "tired"];
-const ATT_PATTERNS = [
-  [0.3,0.2,0.1,0.1,0.1,0.1,0.05,0.05],[0.05,0.4,0.1,0.05,0.1,0.2,0.05,0.05],
-  [0.05,0.15,0.35,0.15,0.1,0.1,0.05,0.05],[0.05,0.05,0.1,0.35,0.25,0.1,0.05,0.05],
-  [0.05,0.15,0.1,0.1,0.35,0.15,0.05,0.05],[0.05,0.45,0.05,0.05,0.2,0.1,0.05,0.05],
-  [0.05,0.05,0.05,0.05,0.05,0.1,0.4,0.25],[0.05,0.25,0.05,0.05,0.1,0.15,0.1,0.25]
-];
-function Attention({ color }) {
-  const [sel, setSel] = useState(1);
-  const [temp, setTemp] = useState(1);
-  const softmax = (arr, t) => { const e = arr.map(v => Math.exp(v * t)); const s = e.reduce((a, b) => a + b, 0); return e.map(v => v / s); };
-  const weights = softmax(ATT_PATTERNS[sel].map(v => Math.log(v + 0.01)), temp);
-  const maxIdx = weights.indexOf(Math.max(...weights));
-
-  const cvRef = useCanvas((ctx, W, H) => {
-    ctx.fillStyle = "#0d0f13"; ctx.fillRect(0, 0, W, H);
-    const n = ATT_TOKENS.length, tw = (W - 20) / n, barMaxH = H - 80;
-    weights.forEach((w, i) => {
-      const bh = w * barMaxH, x = 10 + i * tw + 4;
-      ctx.fillStyle = `rgba(0,212,255,${0.1 + w * 0.9})`; ctx.fillRect(x, H - 50 - bh, tw - 8, bh);
-      ctx.fillStyle = i === sel ? color : "#aaa";
-      ctx.font = (i === sel ? "bold " : "") + "12px Georgia, serif"; ctx.textAlign = "center";
-      ctx.fillText(ATT_TOKENS[i], x + (tw - 8) / 2, H - 32);
-      ctx.font = "9px monospace"; ctx.fillStyle = w > 0.15 ? color : "#666";
-      ctx.fillText(w.toFixed(2), x + (tw - 8) / 2, H - 18);
-    });
-    const sx = 10 + sel * tw + 4;
-    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.setLineDash([3, 3]);
-    ctx.beginPath(); ctx.rect(sx, 0, tw - 8, H - 50); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle = "#555"; ctx.font = "9px monospace"; ctx.textAlign = "left";
-    ctx.fillText(`Query: "${ATT_TOKENS[sel]}" → attends most to: "${ATT_TOKENS[maxIdx]}" (${Math.max(...weights).toFixed(2)})`, 10, 14);
-    ctx.textAlign = "left";
-    // click
-  }, [sel, temp, color]);
-
-  const handleClick = e => {
-    const cv = e.currentTarget; const rect = cv.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / (rect.width / (cvRef.current?.width || 420));
-    setSel(Math.min(ATT_TOKENS.length - 1, Math.max(0, Math.floor((x - 10) / ((420 - 20) / ATT_TOKENS.length)))));
-  };
-
-  return (
-    <InteractiveWrap label="SELF-ATTENTION — CLICK A TOKEN TO QUERY IT" color={color}>
-      <p style={{ fontSize: 12, color: "#888", marginBottom: 8 }}>Sentence: "The cat sat on mat it was tired" — click any word</p>
-      <canvas ref={cvRef} onClick={handleClick} width={420} height={200} style={{ width: "100%", maxWidth: 420, borderRadius: 8, display: "block", cursor: "pointer" }} />
-      <Slider label="Temperature (1/√dₖ)" min={0.1} max={5} val={temp} step={0.1} onChange={setTemp} color={color} />
-      <div style={{ fontFamily: "monospace", fontSize: 11, color: "#666", padding: 8, background: "#111", borderRadius: 8, marginTop: 8 }}>
-        Weights sum to {weights.reduce((a, b) => a + b, 0).toFixed(3)} · Temperature {temp.toFixed(1)}: {temp < 0.5 ? "Very sharp" : temp > 2 ? "Very flat (uniform)" : "Balanced"}
-      </div>
-    </InteractiveWrap>
-  );
-}
-
-// 12. Multi-head
-function MultiHead({ color }) {
-  const [dm, setDm] = useState(512);
-  const [heads, setHeads] = useState(8);
-  const [seqLen, setSeqLen] = useState(512);
-  const [ffnMult, setFfnMult] = useState(4);
-  const dk = Math.floor(dm / heads);
-  const attnP = 4 * dm * dm;
-  const ffnP = 2 * dm * dm * ffnMult;
-  const attnFlops = seqLen * (4 * dm * dm + 2 * seqLen * dm);
-  const fmt = n => n >= 1e9 ? `${(n / 1e9).toFixed(2)}B` : n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : `${n}`;
-
-  const cvRef = useCanvas((ctx, W, H) => {
-    ctx.fillStyle = "#0d0f13"; ctx.fillRect(0, 0, W, H);
-    const maxShow = Math.min(heads, 16), hw = (W - 20) / maxShow;
-    for (let i = 0; i < maxShow; i++) {
-      const x = 10 + i * hw + 2;
-      ctx.fillStyle = `hsl(${180 + i * 25},65%,38%)`;
-      ctx.fillRect(x, 20, hw - 4, H - 50);
-      ctx.fillStyle = "#aaa"; ctx.font = "8px monospace"; ctx.textAlign = "center";
-      ctx.fillText(`H${i + 1}`, x + (hw - 4) / 2, H - 28);
-      ctx.fillText(`d_k=${dk}`, x + (hw - 4) / 2, H - 16);
-    }
-    if (heads > 16) { ctx.fillStyle = "#555"; ctx.font = "9px monospace"; ctx.textAlign = "center"; ctx.fillText(`+${heads - 16} more`, W / 2, H - 4); }
-    ctx.fillStyle = "#555"; ctx.font = "9px monospace"; ctx.textAlign = "left";
-    ctx.fillText(`${heads} heads × d_k=${dk} = d_model=${dm}   |   Attention matrix: ${seqLen}×${seqLen}`, 10, 14);
-  }, [dm, heads, seqLen, color]);
-
-  return (
-    <InteractiveWrap label="MULTI-HEAD ATTENTION — PARAMETER & COMPUTE BUDGET" color={color}>
-      <Slider label="d_model" min={64} max={4096} val={dm} step={64} onChange={setDm} color={color} />
-      <Slider label="Num heads H" min={1} max={32} val={heads} step={1} onChange={setHeads} color={color} />
-      <Slider label="Sequence length n" min={32} max={4096} val={seqLen} step={32} onChange={setSeqLen} color={color} />
-      <Slider label="FFN multiplier" min={1} max={8} val={ffnMult} step={1} onChange={setFfnMult} color={color} />
-      <canvas ref={cvRef} width={420} height={130} style={{ width: "100%", maxWidth: 420, borderRadius: 8, display: "block", margin: "8px 0" }} />
-      <OutputGrid cards={[
-        { label: "d_k per head", value: dk, color },
-        { label: "Attn params", value: fmt(attnP), color: "#aaa" },
-        { label: "FFN params", value: fmt(ffnP), color: "#888" },
-        { label: "FLOPs/token", value: fmt(attnFlops / seqLen), color: "#ffb347" }
-      ]} />
-    </InteractiveWrap>
-  );
-}
-
-// 13. Scaling + LoRA
-function Scaling({ color }) {
-  const [logN, setLogN] = useState(9);
-  const [logD, setLogD] = useState(11);
-  const [baseM, setBaseM] = useState(7);
-  const [rank, setRank] = useState(8);
-  const N = Math.pow(10, logN), D = Math.pow(10, logD);
-  const loss = Math.max(1, 3.1 - 0.076 * logN - 0.095 * logD + 5);
-  const loraParams = 2 * rank * 4096 * (baseM / 7);
-  const totalBase = baseM * 1e9;
-  const fmt = n => n >= 1e9 ? `${(n / 1e9).toFixed(1)}B` : n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(0)}K` : `${Math.round(n)}`;
-
-  const cvRef = useCanvas((ctx, W, H) => {
-    ctx.fillStyle = "#0d0f13"; ctx.fillRect(0, 0, W, H);
-    ctx.strokeStyle = "#1e2229"; ctx.lineWidth = 1;
-    for (let x = 0; x < W; x += 44) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
-    const sx = ln => (ln - 6) / (12 - 6) * (W - 40) + 20, sy = l => H - 20 - (l - 1) / 5 * (H - 40);
-    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2;
-    for (let i = 0; i <= 100; i++) { const ln = 6 + i * 6 / 100, l = Math.max(1, 3.1 - 0.076 * ln - 0.095 * logD + 5); i === 0 ? ctx.moveTo(sx(ln), sy(l)) : ctx.lineTo(sx(ln), sy(l)); }
-    ctx.stroke();
-    const px = sx(logN), py = sy(Math.max(1, loss));
-    ctx.beginPath(); ctx.arc(px, py, 7, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill();
-    // LoRA
-    const lx = W * 0.65, lw = W * 0.3, lh = (H - 30) / 3;
-    ctx.fillStyle = "rgba(255,180,70,0.1)"; ctx.fillRect(lx, 10, lw, lh);
-    ctx.strokeStyle = "rgba(255,180,70,0.4)"; ctx.lineWidth = 1; ctx.strokeRect(lx, 10, lw, lh);
-    ctx.fillStyle = "rgba(0,212,255,0.25)"; ctx.fillRect(lx, 10 + lh * 0.1, lw * 0.15, lh * 0.8);
-    ctx.fillRect(lx + lw * 0.85, 10 + lh * 0.1, lw * 0.15, lh * 0.8);
-    ctx.fillStyle = "#777"; ctx.font = "8px monospace"; ctx.textAlign = "center";
-    ctx.fillText(`W frozen (${fmt(totalBase)})`, lx + lw / 2, 10 + lh / 2 + 3);
-    ctx.fillStyle = "#00d4ff"; ctx.fillText("A", lx + lw * 0.075, 10 + lh / 2 + 3); ctx.fillText("B", lx + lw * 0.925, 10 + lh / 2 + 3);
-    ctx.fillStyle = "#555"; ctx.fillText("LoRA adapters", lx + lw / 2, 10 + lh + 14);
-    ctx.fillStyle = "#555"; ctx.textAlign = "left"; ctx.fillText("Loss ↑", 8, 16); ctx.fillText("← more params", W / 2, H - 6);
-  }, [logN, logD, baseM, rank, color]);
-
-  return (
-    <InteractiveWrap label="SCALING LAWS & LoRA FINE-TUNING" color={color}>
-      <Slider label="log₁₀(N) params" min={6} max={12} val={logN} step={0.1} onChange={setLogN} color={color} />
-      <Slider label="log₁₀(D) tokens" min={8} max={13} val={logD} step={0.1} onChange={setLogD} color={color} />
-      <Slider label="Base model (B params)" min={1} max={70} val={baseM} step={1} onChange={setBaseM} color={color} />
-      <Slider label="LoRA rank r" min={1} max={64} val={rank} step={1} onChange={setRank} color={color} />
-      <canvas ref={cvRef} width={420} height={150} style={{ width: "100%", maxWidth: 420, borderRadius: 8, display: "block", margin: "8px 0" }} />
-      <OutputGrid cards={[
-        { label: "Predicted Loss", value: loss.toFixed(2), color },
-        { label: "N parameters", value: fmt(N), color: "#aaa" },
-        { label: "LoRA trainable", value: fmt(loraParams), color: "#ffb347" },
-        { label: "Param %", value: `${(loraParams / totalBase * 100).toFixed(2)}%`, color: "#888" }
-      ]} />
-    </InteractiveWrap>
-  );
-}
-
-// 14. Tokenization
-function Tokenization({ color }) {
-  const [imgSize, setImgSize] = useState(224);
-  const [patch, setPatch] = useState(16);
-  const [txtTok, setTxtTok] = useState(256);
-  const [embDim, setEmbDim] = useState(768);
-  const imgTok = Math.floor(imgSize / patch) ** 2;
-  const total = imgTok + txtTok;
-  const kvMem = (total * embDim * 2 * 2 / 1e6).toFixed(1);
-  const fmt = n => n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : `${n}`;
-
-  const cvRef = useCanvas((ctx, W, H) => {
-    ctx.fillStyle = "#0d0f13"; ctx.fillRect(0, 0, W, H);
-    const maxShow = Math.min(total, 42), showImg = Math.min(imgTok, Math.floor(maxShow * imgTok / total));
-    const showTxt = maxShow - showImg, tokW = (W - 20) / maxShow, tokH = 22;
-    for (let i = 0; i < showImg; i++) { ctx.fillStyle = `rgba(255,180,70,0.75)`; ctx.fillRect(10 + i * tokW + 1, H / 2 - tokH / 2, tokW - 2, tokH); }
-    for (let i = 0; i < showTxt; i++) { ctx.fillStyle = "rgba(100,150,255,0.75)"; ctx.fillRect(10 + (showImg + i) * tokW + 1, H / 2 - tokH / 2, tokW - 2, tokH); }
-    ctx.fillStyle = "#aaa"; ctx.font = "10px monospace"; ctx.textAlign = "center";
-    if (showImg > 2) ctx.fillText(`Image (${imgTok})`, 10 + showImg * tokW / 2, H / 2 - tokH / 2 - 8);
-    if (showTxt > 2) ctx.fillStyle = "#7090ff", ctx.fillText(`Text (${txtTok})`, 10 + (showImg + showTxt / 2) * tokW, H / 2 + tokH / 2 + 14);
-    if (total > maxShow) { ctx.fillStyle = "#555"; ctx.font = "9px monospace"; ctx.fillText(`showing ${maxShow}/${total} tokens`, W / 2, H - 6); }
-    ctx.fillStyle = "#333"; ctx.font = "9px monospace"; ctx.textAlign = "left";
-    ctx.fillText(`All ${total} tokens → same Transformer, same attention`, 10, 16);
-  }, [imgSize, patch, txtTok, color]);
-
-  return (
-    <InteractiveWrap label="MULTIMODAL TOKENIZATION — SHARED EMBEDDING SPACE" color={color}>
-      <Slider label="Image size H×W" min={32} max={512} val={imgSize} step={8} onChange={setImgSize} color={color} />
-      <Slider label="Patch size p×p" min={8} max={64} val={patch} step={4} onChange={setPatch} color={color} />
-      <Slider label="Text tokens" min={16} max={4096} val={txtTok} step={16} onChange={setTxtTok} color={color} />
-      <Slider label="Embedding dim d" min={64} max={4096} val={embDim} step={64} onChange={setEmbDim} color={color} />
-      <canvas ref={cvRef} width={420} height={130} style={{ width: "100%", maxWidth: 420, borderRadius: 8, display: "block", margin: "8px 0" }} />
-      <OutputGrid cards={[
-        { label: "Image tokens", value: imgTok, color },
-        { label: "Total sequence", value: total, color: "#aaa" },
-        { label: "Attention ops (n²)", value: fmt(total * total), color: "#888" },
-        { label: "KV cache fp16", value: `${kvMem}MB`, color: "#ffb347" }
-      ]} />
-    </InteractiveWrap>
-  );
-}
-
-// 15. CLIP
-function CLIP({ color }) {
-  const [tau, setTau] = useState(0.07);
-  const [batchN, setBatchN] = useState(4);
-  const sims = useRef([]);
+  const pathsRef = useRef({});
   useEffect(() => {
-    sims.current = Array.from({ length: 10 }, (_, i) => Array.from({ length: 10 }, (_, j) => i === j ? 0.85 + Math.random() * 0.1 : 0.1 + Math.random() * 0.3));
-  }, [batchN]);
-  const N = Math.min(batchN, 10);
-  const sm = (row, t) => { const e = row.map(v => Math.exp(v / t)); const s = e.reduce((a, b) => a + b, 0); return e.map(v => v / s); };
-  let loss = 0, correct = 0;
-  const s2 = sims.current.slice(0, N).map(r => r.slice(0, N));
-  s2.forEach((row, i) => { const sw = sm(row, tau); loss -= Math.log(sw[i] + 1e-9); if (sw.indexOf(Math.max(...sw)) === i) correct++; });
-  loss /= N || 1;
+    const computed = {};
+    ["SGD", "Momentum", "Adam"].forEach(o => {
+      let x = 2.2, y = 1.8;
+      let mx = 0, my = 0, vx = 0, vy = 0, t = 0;
+      const pts = [[x, y]];
+      for (let i = 0; i < maxSteps; i++) {
+        t++;
+        const [gx, gy] = grad(x, y);
+        if (o === "SGD") { x -= lr * gx; y -= lr * gy; }
+        else if (o === "Momentum") {
+          const beta = 0.9;
+          mx = beta * mx + (1 - beta) * gx; my = beta * my + (1 - beta) * gy;
+          x -= lr * mx * 2; y -= lr * my * 2;
+        } else {
+          const b1 = 0.9, b2 = 0.999, eps = 1e-8;
+          mx = b1 * mx + (1 - b1) * gx; my = b1 * my + (1 - b1) * gy;
+          vx = b2 * vx + (1 - b2) * gx * gx; vy = b2 * vy + (1 - b2) * gy * gy;
+          const mxHat = mx / (1 - b1 ** t), myHat = my / (1 - b1 ** t);
+          const vxHat = vx / (1 - b2 ** t), vyHat = vy / (1 - b2 ** t);
+          x -= lr * mxHat / (Math.sqrt(vxHat) + eps);
+          y -= lr * myHat / (Math.sqrt(vyHat) + eps);
+        }
+        pts.push([Math.max(-3, Math.min(3, x)), Math.max(-3, Math.min(3, y))]);
+      }
+      computed[o] = pts;
+    });
+    pathsRef.current = computed;
+  }, [lr, grad]);
+  const paths = pathsRef.current;
 
-  const cvRef = useCanvas((ctx, W, H) => {
-    ctx.fillStyle = "#0d0f13"; ctx.fillRect(0, 0, W, H);
-    const cell = Math.min(Math.floor((W - 100) / N), Math.floor((H - 60) / N));
-    const ox = (W - N * cell) / 2, oy = 30;
-    s2.forEach((row, i) => row.forEach((v, j) => {
-      const isM = i === j;
-      ctx.fillStyle = isM ? `rgba(255,180,70,${v})` : `rgba(255,100,100,${v * 0.5})`;
-      ctx.fillRect(ox + j * cell + 1, oy + i * cell + 1, cell - 2, cell - 2);
-      ctx.fillStyle = "#ccc"; ctx.font = "9px monospace"; ctx.textAlign = "center";
-      ctx.fillText(v.toFixed(1), ox + j * cell + cell / 2, oy + i * cell + cell / 2 + 3);
-    }));
-    ctx.fillStyle = "#555"; ctx.font = "9px monospace"; ctx.textAlign = "center";
-    ctx.fillText("text captions →", ox + N * cell / 2, oy + N * cell + 16);
-    ctx.save(); ctx.translate(ox - 12, oy + N * cell / 2); ctx.rotate(-Math.PI / 2); ctx.fillText("images ↓", 0, 0); ctx.restore();
-    ctx.fillStyle = "#888"; ctx.fillText(`τ=${tau.toFixed(2)}: ${tau < 0.1 ? "Sharp (good)" : tau > 0.5 ? "Flat (bad)" : "Balanced"}`, W / 2, 16);
-    ctx.textAlign = "left";
-  }, [tau, N, s2.flat().join(","), color]);
+  const pathColors = { SGD: "#4a9aff", Momentum: "#ffb347", Adam: color };
+
+  const ref = useCanvas((ctx, W, H) => {
+    ctx.clearRect(0, 0, W, H);
+    // draw landscape as heatmap
+    const res = 4;
+    for (let px = 0; px < W; px += res) {
+      for (let py = 0; py < H; py += res) {
+        const x = (px / W) * 6 - 3, y = (py / H) * 6 - 3;
+        const v = landscape(x, y);
+        const norm = (v + 1) / 2;
+        const r = Math.floor(7 + norm * 20), g = Math.floor(9 + norm * 12), b = Math.floor(14 + norm * 30);
+        ctx.fillStyle = `rgb(${r},${g},${b})`;
+        ctx.fillRect(px, py, res, res);
+      }
+    }
+    const toX = x => (x + 3) / 6 * W;
+    const toY = y => (y + 3) / 6 * H;
+    // draw contours
+    ctx.strokeStyle = "#ffffff10"; ctx.lineWidth = 0.5;
+    for (let v = -0.5; v < 1.5; v += 0.25) {
+      ctx.beginPath();
+      let first = true;
+      for (let px = 0; px < W; px++) {
+        const x = (px / W) * 6 - 3;
+        for (let py = 0; py < H; py++) {
+          const y = (py / H) * 6 - 3;
+          if (Math.abs(landscape(x, y) - v) < 0.04) {
+            if (first) { ctx.moveTo(px, py); first = false; } else ctx.lineTo(px, py);
+          }
+        }
+      }
+      ctx.stroke();
+    }
+    // draw paths up to current step
+    Object.entries(paths).forEach(([name, pts]) => {
+      if (name !== opt && step > 0) return;
+      const c = pathColors[name];
+      const end = Math.min(step + 1, pts.length);
+      ctx.beginPath(); ctx.strokeStyle = c + (name === opt ? "ee" : "55"); ctx.lineWidth = name === opt ? 2.5 : 1;
+      pts.slice(0, end).forEach(([x, y], i) => { const m = i === 0 ? "moveTo" : "lineTo"; ctx[m](toX(x), toY(y)); });
+      ctx.stroke();
+      if (end > 1) {
+        const [x, y] = pts[end - 1];
+        ctx.beginPath(); ctx.arc(toX(x), toY(y), name === opt ? 5 : 3, 0, Math.PI * 2);
+        ctx.fillStyle = c; ctx.fill();
+      }
+    });
+    ctx.fillStyle = "#ffffffcc"; ctx.font = "11px monospace";
+    ctx.fillText(`step ${step}/${maxSteps}   lr=${lr}`, 10, 18);
+  }, [step, opt, lr, paths]);
 
   return (
-    <InteractiveWrap label="CLIP — CONTRASTIVE LOSS & TEMPERATURE" color={color}>
-      <Slider label="Temperature τ" min={0.01} max={1.0} val={tau} step={0.01} onChange={setTau} color={color} />
-      <Slider label="Batch size N" min={2} max={8} val={batchN} step={1} onChange={setBatchN} color={color} />
-      <canvas ref={cvRef} width={420} height={200} style={{ width: "100%", maxWidth: 420, borderRadius: 8, display: "block", margin: "8px 0" }} />
-      <OutputGrid cards={[
-        { label: "CLIP Loss", value: loss.toFixed(3), color },
-        { label: "Retrieval Acc", value: `${correct}/${N}`, color: "#aaa" }
-      ]} />
-    </InteractiveWrap>
+    <LabWrap title="Gradient Descent §3.3" color={color}>
+      <canvas ref={ref} style={{ width: "100%", height: 230, display: "block", borderRadius: 8, marginBottom: 10, cursor: "pointer" }} />
+      <div style={{ display: "flex", gap: 8, marginBottom: 10, alignItems: "center" }}>
+        <button onClick={() => setStep(0)} style={{ padding: "5px 12px", background: "#1a1a1a", border: "1px solid #333", borderRadius: 6, color: "#aaa", fontFamily: "monospace", fontSize: 11, cursor: "pointer" }}>↩ Reset</button>
+        <button onClick={() => setStep(s => Math.min(s + 1, maxSteps))} style={{ padding: "5px 12px", background: color + "22", border: `1px solid ${color}`, borderRadius: 6, color, fontFamily: "monospace", fontSize: 11, cursor: "pointer" }}>Step →</button>
+        <button onClick={() => { let s = 0; const id = setInterval(() => { s++; setStep(s); if (s >= maxSteps) clearInterval(id); }, 60); }} style={{ padding: "5px 12px", background: color + "22", border: `1px solid ${color}`, borderRadius: 6, color, fontFamily: "monospace", fontSize: 11, cursor: "pointer" }}>▶ Run</button>
+        <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+          {Object.entries(pathColors).map(([n, c]) => (
+            <button key={n} onClick={() => { setOpt(n); setStep(0); }} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${c}`, background: opt === n ? c : "transparent", color: opt === n ? "#000" : c, fontFamily: "monospace", fontSize: 10, cursor: "pointer" }}>{n}</button>
+          ))}
+        </div>
+      </div>
+      <Slider label="Learning rate η" min={0.01} max={0.3} step={0.01} val={lr} onChange={v => { setLr(v); setStep(0); }} color={color} />
+    </LabWrap>
   );
 }
 
-// 16. Diffusion
-function Diffusion({ color }) {
-  const [t, setT] = useState(0);
-  const [bmax, setBmax] = useState(0.02);
-  const [sch, setSch] = useState("linear");
-  const T = 1000;
-  const getAlpha = (tt) => {
-    if (sch === "linear") { let a = 1; for (let i = 0; i < tt; i++) a *= (1 - (0.0001 + (bmax - 0.0001) * i / T)); return Math.max(0, a); }
-    const f = s => Math.cos((s / T + 0.008) / 1.008 * Math.PI / 2) ** 2;
-    return Math.max(0, f(tt) / f(0));
-  };
-  const abar = getAlpha(t), noise = 1 - abar;
-  const snr = abar > 0.001 ? (10 * Math.log10(abar / (noise + 1e-9))).toFixed(1) : "-40.0";
+// ─── LAB: Backpropagation / Vanishing Gradient ────────────────────────────────
+function LabBackprop({ color }) {
+  const [depth, setDepth] = useState(8);
+  const [skipConn, setSkipConn] = useState(false);
+  const [activation, setActivation] = useState("Tanh");
+  const ref = useCanvas((ctx, W, H) => {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = "#07090b"; ctx.fillRect(0, 0, W, H);
+    // gradient magnitude at each layer (simplified model)
+    const grads = Array.from({ length: depth }, (_, i) => {
+      const layer = depth - 1 - i;
+      let g;
+      if (activation === "Tanh") g = Math.pow(0.6, layer) * (skipConn ? Math.pow(1.1, layer * 0.4) : 1);
+      else if (activation === "ReLU") g = Math.pow(0.92, layer) * (skipConn ? Math.pow(1.05, layer * 0.5) : 1);
+      else g = Math.pow(0.98, layer) * (skipConn ? Math.pow(1.02, layer * 0.2) : 1);
+      return Math.min(1, Math.max(0.001, g));
+    });
+    const barW = (W - 40) / depth - 4;
+    const maxH = H - 50;
+    grads.forEach((g, i) => {
+      const x = 20 + i * ((W - 40) / depth);
+      const h = g * maxH;
+      const norm = Math.log(g + 0.001) / Math.log(1.001);
+      const red = g < 0.05 ? 1 : 0;
+      const r = Math.floor(red * 200 + (1 - red) * parseInt(color.slice(1, 3) || "4f", 16));
+      ctx.fillStyle = g < 0.01 ? "#ff4444" : g < 0.1 ? "#ff8844" : color;
+      ctx.fillRect(x, H - 30 - h, barW, h);
+      // skip connection indicators
+      if (skipConn && i > 0 && i % 2 === 0) {
+        ctx.strokeStyle = "#4a9aff44"; ctx.lineWidth = 1; ctx.setLineDash([2, 2]);
+        ctx.beginPath();
+        const px = x - (W - 40) / depth * 2 + barW / 2;
+        ctx.moveTo(px, H - 30 - grads[i - 2] * maxH);
+        ctx.lineTo(x + barW / 2, H - 30 - h);
+        ctx.stroke(); ctx.setLineDash([]);
+      }
+      ctx.fillStyle = "#445"; ctx.font = "9px monospace";
+      ctx.fillText(`L${i + 1}`, x + barW / 2 - 6, H - 14);
+    });
+    ctx.fillStyle = "#ffffffcc"; ctx.font = "11px monospace";
+    ctx.fillText("← output layer                         input layer →", 20, 16);
+    ctx.fillText("gradient magnitude flowing backward", 20, H - 2);
+    const vanished = grads[grads.length - 1] < 0.05;
+    if (vanished) {
+      ctx.fillStyle = "#ff444488";
+      ctx.fillText("⚠ VANISHING GRADIENT", W / 2 - 70, H / 2);
+    }
+  }, [depth, skipConn, activation]);
 
-  const cvRef = useCanvas((ctx, W, H) => {
-    ctx.fillStyle = "#0d0f13"; ctx.fillRect(0, 0, W, H);
-    const sx = tt => (tt / T) * (W - 40) + 20, sy = v => H - 30 - v * (H - 50);
-    ["linear", "cosine"].forEach((s, si) => {
-      ctx.beginPath(); ctx.lineWidth = 2; ctx.strokeStyle = s === "linear" ? color : "#ff7043";
-      ctx.setLineDash(si === 1 && sch !== "cosine" ? [4, 4] : []);
-      for (let i = 0; i <= 100; i++) {
-        const tt = i * T / 100;
-        let a; if (s === "linear") { a = 1; for (let k = 0; k < tt; k++) a *= (1 - (0.0001 + (bmax - 0.0001) * k / T)); a = Math.max(0, a); }
-        else { const f = x => Math.cos((x / T + 0.008) / 1.008 * Math.PI / 2) ** 2; a = Math.max(0, f(tt) / f(0)); }
-        i === 0 ? ctx.moveTo(sx(tt), sy(a)) : ctx.lineTo(sx(tt), sy(a));
+  return (
+    <LabWrap title="Backprop & Vanishing Gradient §3.4" color={color}>
+      <canvas ref={ref} style={{ width: "100%", height: 200, display: "block", borderRadius: 8, marginBottom: 10 }} />
+      <Slider label="Network depth" min={2} max={20} val={depth} onChange={setDepth} color={color} />
+      <BtnRow options={["Tanh", "ReLU", "GELU"]} active={activation} onSelect={setActivation} color={color} />
+      <label style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "monospace", fontSize: 11, color, cursor: "pointer" }}>
+        <input type="checkbox" checked={skipConn} onChange={e => setSkipConn(e.target.checked)} style={{ accentColor: color }} />
+        Enable skip/residual connections (ResNet-style)
+      </label>
+    </LabWrap>
+  );
+}
+
+// ─── LAB: Cross-Entropy Loss ──────────────────────────────────────────────────
+function LabCrossEntropy({ color }) {
+  const [logits, setLogits] = useState([2.0, 0.5, -0.3]);
+  const classes = ["cat 🐱", "dog 🐶", "bird 🐦"];
+  const softmax = ls => { const exps = ls.map(l => Math.exp(l)); const sum = exps.reduce((a, b) => a + b, 0); return exps.map(e => e / sum); };
+  const probs = softmax(logits);
+  const ceTrue = -Math.log(probs[0]);
+  return (
+    <LabWrap title="Cross-Entropy Loss §3.1" color={color}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+        <div>
+          <div style={{ fontFamily: "monospace", fontSize: 10, color: "#556", marginBottom: 8, textTransform: "uppercase" }}>Logits (model output)</div>
+          {logits.map((l, i) => (
+            <Slider key={i} label={classes[i]} min={-4} max={4} step={0.1} val={l} onChange={v => setLogits(ls => ls.map((x, j) => j === i ? v : x))} color={i === 0 ? color : "#7a7aaa"} />
+          ))}
+        </div>
+        <div>
+          <div style={{ fontFamily: "monospace", fontSize: 10, color: "#556", marginBottom: 8, textTransform: "uppercase" }}>Softmax Probabilities</div>
+          {probs.map((p, i) => (
+            <div key={i} style={{ marginBottom: 8 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "monospace", fontSize: 11, color: i === 0 ? color : "#667", marginBottom: 3 }}>
+                <span>{classes[i]}</span><span>{(p * 100).toFixed(1)}%</span>
+              </div>
+              <div style={{ height: 8, background: "#111", borderRadius: 4, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${p * 100}%`, background: i === 0 ? color : "#334", borderRadius: 4, transition: "width 0.2s" }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <StatBox label="CE Loss (cat)" val={ceTrue.toFixed(3)} color={color} />
+        <StatBox label="P(cat)" val={(probs[0] * 100).toFixed(1)} unit="%" color={color} />
+        <StatBox label="log P(cat)" val={(-ceTrue).toFixed(3)} color="#7a7aaa" />
+      </div>
+      <p style={{ fontSize: 11, color: "#556", fontFamily: "monospace", margin: "8px 0 0" }}>
+        True class = cat. CE = −log P̂(cat). Lower logit → lower probability → higher loss.
+      </p>
+    </LabWrap>
+  );
+}
+
+// ─── LAB: Activation Functions ────────────────────────────────────────────────
+function LabActivations({ color }) {
+  const [fn, setFn] = useState("ReLU");
+  const [showDeriv, setShowDeriv] = useState(true);
+  const fns = {
+    ReLU: { f: x => Math.max(0, x), d: x => x > 0 ? 1 : 0, note: "Dead neuron risk for x<0. Fast, widely used." },
+    Tanh: { f: x => Math.tanh(x), d: x => 1 - Math.tanh(x) ** 2, note: "Saturates → vanishing gradient. Classic." },
+    Sigmoid: { f: x => 1 / (1 + Math.exp(-x)), d: x => { const s = 1 / (1 + Math.exp(-x)); return s * (1 - s); }, note: "Output ∈(0,1). Severe saturation at extremes." },
+    GELU: { f: x => x * 0.5 * (1 + Math.tanh(0.7978845608 * (x + 0.044715 * x ** 3))), d: x => { const t = Math.tanh(0.7978845608 * (x + 0.044715 * x ** 3)); return 0.5 * (1 + t) + x * 0.5 * (1 - t ** 2) * 0.7978845608 * (1 + 3 * 0.044715 * x ** 2); }, note: "Used in GPT, BERT. Smooth, non-zero for x<0." },
+    "Leaky ReLU": { f: x => x > 0 ? x : 0.1 * x, d: x => x > 0 ? 1 : 0.1, note: "α=0.1 for x<0. Prevents dead neurons." },
+  };
+  const ref = useCanvas((ctx, W, H) => {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = "#07090b"; ctx.fillRect(0, 0, W, H);
+    const toX = x => (x + 3) / 6 * (W - 40) + 20;
+    const toY = y => H / 2 - y * (H / 5);
+    ctx.strokeStyle = "#1a1f26"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(20, H / 2); ctx.lineTo(W - 20, H / 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(W / 2, 10); ctx.lineTo(W / 2, H - 10); ctx.stroke();
+    // grid
+    [-2, -1, 1, 2].forEach(v => {
+      ctx.fillStyle = "#223"; ctx.font = "9px monospace";
+      ctx.fillText(v, toX(v) - 4, H / 2 + 14);
+      ctx.beginPath(); ctx.strokeStyle = "#1a1f26"; ctx.lineWidth = 0.5;
+      ctx.moveTo(toX(v), 10); ctx.lineTo(toX(v), H - 10); ctx.stroke();
+    });
+    const { f, d } = fns[fn];
+    // derivative
+    if (showDeriv) {
+      ctx.beginPath(); ctx.strokeStyle = "#ff884488"; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
+      for (let px = 0; px <= W - 40; px++) {
+        const x = (px / (W - 40)) * 6 - 3;
+        try { const m = px === 0 ? "moveTo" : "lineTo"; ctx[m](toX(x), toY(d(x))); } catch (e) {}
       }
       ctx.stroke(); ctx.setLineDash([]);
-    });
-    ctx.strokeStyle = "#fff"; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
-    ctx.beginPath(); ctx.moveTo(sx(t), 10); ctx.lineTo(sx(t), H - 30); ctx.stroke(); ctx.setLineDash([]);
-    const ca = getAlpha(t);
-    ctx.beginPath(); ctx.arc(sx(t), sy(ca), 7, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill();
-    const imgX = W - 80, imgY = 10, imgS = 60;
-    for (let px = 0; px < imgS; px += 4) for (let py = 0; py < imgS; py += 4) {
-      const signal = (px < imgS / 2 && py < imgS / 2) ? 1 : 0.3;
-      const v = ca * signal + noise * Math.random();
-      ctx.fillStyle = `rgba(255,180,70,${Math.min(1, v)})`; ctx.fillRect(imgX + px, imgY + py, 4, 4);
     }
-    ctx.strokeStyle = "#333"; ctx.lineWidth = 1; ctx.strokeRect(imgX, imgY, imgS, imgS);
-    ctx.fillStyle = "#555"; ctx.font = "8px monospace"; ctx.textAlign = "center";
-    ctx.fillText(`x_${t}`, imgX + imgS / 2, imgY + imgS + 12);
-    ctx.fillStyle = "#555"; ctx.textAlign = "left"; ctx.fillText("α̅ₜ →", 8, H - 14);
-    ctx.fillText("t=0 clean", 18, 14); ctx.fillText(`t=${T} noise`, W - 70, 14);
-  }, [t, bmax, sch, color]);
+    // function
+    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2.5;
+    for (let px = 0; px <= W - 40; px++) {
+      const x = (px / (W - 40)) * 6 - 3;
+      try { const m = px === 0 ? "moveTo" : "lineTo"; ctx[m](toX(x), toY(f(x))); } catch (e) {}
+    }
+    ctx.stroke();
+    ctx.fillStyle = color; ctx.font = "11px monospace";
+    ctx.fillText(fn, 28, 20);
+    if (showDeriv) { ctx.fillStyle = "#ff884488"; ctx.fillText("f'(x)", 28, 34); }
+  }, [fn, showDeriv]);
 
   return (
-    <InteractiveWrap label="DIFFUSION — FORWARD NOISE PROCESS" color={color}>
-      <Slider label={`Timestep t (0→${T})`} min={0} max={T} val={t} step={1} onChange={setT} color={color} />
-      <Slider label="β_max" min={0.01} max={0.03} val={bmax} step={0.001} onChange={setBmax} color={color} />
-      <BtnRow options={["linear", "cosine"]} active={sch} onSelect={setSch} color={color} />
-      <canvas ref={cvRef} width={420} height={180} style={{ width: "100%", maxWidth: 420, borderRadius: 8, display: "block", margin: "8px 0" }} />
-      <OutputGrid cards={[
-        { label: "Signal α̅ₜ", value: abar.toFixed(3), color },
-        { label: "Noise (1-α̅ₜ)", value: noise.toFixed(3), color: "#ff6b6b" },
-        { label: "SNR (dB)", value: `${snr}dB`, color: "#aaa" }
-      ]} />
-    </InteractiveWrap>
+    <LabWrap title="Activation Functions §4.3" color={color}>
+      <canvas ref={ref} style={{ width: "100%", height: 200, display: "block", borderRadius: 8, marginBottom: 8 }} />
+      <BtnRow options={Object.keys(fns)} active={fn} onSelect={setFn} color={color} />
+      <label style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "monospace", fontSize: 11, color: "#ff884499", cursor: "pointer" }}>
+        <input type="checkbox" checked={showDeriv} onChange={e => setShowDeriv(e.target.checked)} style={{ accentColor: "#ff8844" }} />
+        Show derivative f'(x)
+      </label>
+      <p style={{ fontSize: 11, color: "#7a7a8a", fontFamily: "monospace", margin: "6px 0 0" }}>{fns[fn].note}</p>
+    </LabWrap>
   );
 }
 
-// 17. Fine-tuning
-function FineTuning({ color }) {
-  const [sz, setSz] = useState(7);
-  const [rank, setRank] = useState(16);
-  const [vram, setVram] = useState(24);
-  const fullV = sz * 7, loraV = sz * 2 + sz * rank / 1000 * 3, qloraV = sz * 0.5 + sz * rank / 1000 * 3;
-  const feasible = qloraV < vram ? "QLoRA ✓" : loraV < vram ? "LoRA ✓" : fullV < vram ? "Full FT ✓" : "Need bigger GPU";
-  const feasColor = qloraV < vram ? color : loraV < vram ? "#ffb347" : fullV < vram ? "#ff9a9a" : "#ff4444";
-
-  const cvRef = useCanvas((ctx, W, H) => {
-    ctx.fillStyle = "#0d0f13"; ctx.fillRect(0, 0, W, H);
-    const methods = [["Full FT", fullV, "#ff6b6b"], ["LoRA", loraV, "#ffb347"], ["QLoRA", qloraV, color]];
-    const maxV = Math.max(fullV, vram);
-    const bw = (W - 60) / 3;
-    methods.forEach(([name, v, c], i) => {
-      const bh = Math.min(H - 50, (v / maxV) * (H - 50)), x = 20 + i * (bw + 15);
-      ctx.fillStyle = `${c}22`; ctx.fillRect(x, H - 30 - bh, bw, bh);
-      ctx.strokeStyle = v <= vram ? c : "#ff4444"; ctx.lineWidth = v <= vram ? 2 : 1; ctx.strokeRect(x, H - 30 - bh, bw, bh);
-      ctx.fillStyle = c; ctx.font = "10px monospace"; ctx.textAlign = "center"; ctx.fillText(name, x + bw / 2, H - 14);
-      ctx.fillStyle = v <= vram ? c : "#ff4444"; ctx.fillText(`${v.toFixed(0)}GB`, x + bw / 2, H - 30 - bh - 6);
+// ─── LAB: Multi-Head Attention ────────────────────────────────────────────────
+function LabAttention({ color }) {
+  const [temp, setTemp] = useState(1.0);
+  const [heads, setHeads] = useState(2);
+  const tokens = ["The", "cat", "sat", "on", "mat"];
+  const N = tokens.length;
+  const raw = useRef([
+    [1.2, 0.8, 0.3, 0.1, 0.2],
+    [0.9, 1.5, 0.7, 0.2, 0.3],
+    [0.4, 0.8, 1.3, 0.6, 0.4],
+    [0.2, 0.3, 0.5, 1.2, 0.9],
+    [0.3, 0.4, 0.5, 0.8, 1.4]
+  ]);
+  const softmaxRow = row => { const exps = row.map(v => Math.exp(v / temp)); const sum = exps.reduce((a, b) => a + b, 0); return exps.map(e => e / sum); };
+  const attn = raw.current.map(r => softmaxRow(r));
+  const ref = useCanvas((ctx, W, H) => {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = "#07090b"; ctx.fillRect(0, 0, W, H);
+    const pad = 52, cell = (Math.min(W, H) - pad - 20) / N;
+    attn.forEach((row, i) => {
+      row.forEach((v, j) => {
+        const hue = v;
+        ctx.fillStyle = `rgba(${Math.floor(parseInt(color.slice(1, 3), 16) * v * 1.2)},${Math.floor(parseInt(color.slice(3, 5), 16) * v)},${Math.floor(parseInt(color.slice(5, 7), 16) * v * 0.3)},${0.15 + v * 0.85})`;
+        ctx.fillRect(pad + j * cell, pad + i * cell, cell - 2, cell - 2);
+        ctx.fillStyle = v > 0.3 ? "#000" : "#667";
+        ctx.font = "10px monospace";
+        ctx.fillText(v.toFixed(2), pad + j * cell + cell / 2 - 14, pad + i * cell + cell / 2 + 4);
+      });
     });
-    const ly = H - 30 - (vram / maxV) * (H - 50);
-    ctx.strokeStyle = "rgba(255,255,255,0.3)"; ctx.lineWidth = 1; ctx.setLineDash([5, 5]);
-    ctx.beginPath(); ctx.moveTo(10, ly); ctx.lineTo(W - 10, ly); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle = "#666"; ctx.font = "9px monospace"; ctx.textAlign = "right";
-    ctx.fillText(`Available: ${vram}GB`, W - 14, ly - 4); ctx.textAlign = "left";
-  }, [sz, rank, vram, color]);
+    tokens.forEach((t, i) => {
+      ctx.fillStyle = color; ctx.font = "11px monospace";
+      ctx.fillText(t, pad + i * cell + 4, pad - 6);
+      ctx.save(); ctx.translate(pad - 6, pad + i * cell + cell / 2 + 4);
+      ctx.rotate(-Math.PI / 2); ctx.fillText(t, -16, 0); ctx.restore();
+    });
+    ctx.fillStyle = "#334"; ctx.font = "10px monospace";
+    ctx.fillText(`τ = ${temp.toFixed(1)}`, W - 60, 18);
+  }, [temp, heads]);
 
   return (
-    <InteractiveWrap label="FINE-TUNING STRATEGY — VRAM COMPARATOR" color={color}>
-      <Slider label="Base model (B params)" min={1} max={70} val={sz} step={1} onChange={setSz} color={color} />
-      <Slider label="LoRA rank r" min={1} max={64} val={rank} step={1} onChange={setRank} color={color} />
-      <Slider label="GPU VRAM (GB)" min={8} max={80} val={vram} step={2} onChange={setVram} color={color} />
-      <canvas ref={cvRef} width={420} height={150} style={{ width: "100%", maxWidth: 420, borderRadius: 8, display: "block", margin: "8px 0" }} />
-      <OutputGrid cards={[
-        { label: "Full FT VRAM", value: `${fullV.toFixed(0)}GB`, color: "#ff6b6b" },
-        { label: "LoRA VRAM", value: `${loraV.toFixed(0)}GB`, color: "#ffb347" },
-        { label: "QLoRA VRAM", value: `${qloraV.toFixed(0)}GB`, color },
-        { label: "Best fit", value: feasible, color: feasColor }
-      ]} />
-    </InteractiveWrap>
+    <LabWrap title="Self-Attention Heatmap §4.8" color={color}>
+      <canvas ref={ref} style={{ width: "100%", height: 280, display: "block", borderRadius: 8, marginBottom: 10 }} />
+      <Slider label="Temperature τ (√d_QK in practice)" min={0.1} max={4} step={0.1} val={temp} onChange={setTemp} color={color} />
+      <p style={{ fontSize: 11, color: "#556", fontFamily: "monospace", margin: "4px 0 0" }}>
+        Row i = where token i attends. Low τ → sharper (argmax-like). High τ → uniform attention.
+        A_q,k = softmax(Q·K^T / √d_QK)
+      </p>
+    </LabWrap>
   );
 }
 
-// 18. RNN vs Transformer
-function RNNvsTransformer({ color }) {
-  const [seqLen, setSeqLen] = useState(12);
-  const [mode, setMode] = useState("RNN");
-
-  const cvRef = useCanvas((ctx, W, H) => {
-    ctx.fillStyle = "#0d0f13"; ctx.fillRect(0, 0, W, H);
-    const spacing = (W - 40) / seqLen, cy = H / 2;
-    const nx = i => 20 + i * spacing + spacing / 2;
-    if (mode === "RNN" || mode === "LSTM") {
-      for (let i = 0; i < seqLen - 1; i++) {
-        const fade = Math.max(0.05, 1 - i * (0.9 / (seqLen - 1)));
-        ctx.strokeStyle = `rgba(0,212,255,${fade})`; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(nx(i) + 12, cy); ctx.lineTo(nx(i + 1) - 12, cy); ctx.stroke();
-        ctx.fillStyle = `rgba(0,212,255,${fade})`;
-        ctx.beginPath(); ctx.moveTo(nx(i + 1) - 12, cy); ctx.lineTo(nx(i + 1) - 18, cy - 5); ctx.lineTo(nx(i + 1) - 18, cy + 5); ctx.closePath(); ctx.fill();
+// ─── LAB: Positional Encoding ─────────────────────────────────────────────────
+function LabPositionalEncoding({ color }) {
+  const [T, setT] = useState(32);
+  const [D, setD] = useState(64);
+  const ref = useCanvas((ctx, W, H) => {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = "#07090b"; ctx.fillRect(0, 0, W, H);
+    const cellW = (W - 4) / T, cellH = (H - 4) / Math.min(D, 32);
+    for (let t = 0; t < T; t++) {
+      for (let d = 0; d < Math.min(D, 32); d++) {
+        const enc = d % 2 === 0
+          ? Math.sin(t / Math.pow(10000, d / D))
+          : Math.cos(t / Math.pow(10000, (d - 1) / D));
+        const v = (enc + 1) / 2;
+        const r = Math.floor(v * parseInt(color.slice(1, 3), 16));
+        const g = Math.floor(v * parseInt(color.slice(3, 5), 16));
+        const b = Math.floor(v * parseInt(color.slice(5, 7), 16));
+        ctx.fillStyle = `rgb(${r},${g},${b})`;
+        ctx.fillRect(2 + t * cellW, 2 + d * cellH, cellW - 0.5, cellH - 0.5);
       }
-      ctx.strokeStyle = "rgba(255,100,100,0.3)"; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
-      ctx.beginPath(); ctx.moveTo(nx(0), cy - 20); ctx.quadraticCurveTo(W / 2, 20, nx(seqLen - 1), cy - 20); ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = "rgba(255,100,100,0.6)"; ctx.font = "9px monospace"; ctx.textAlign = "center";
-      ctx.fillText(`${seqLen - 1} serial steps to reach last token`, W / 2, 14);
-    } else {
-      for (let i = 0; i < seqLen; i++) for (let j = 0; j < seqLen; j++) {
-        if (i === j) continue;
-        ctx.strokeStyle = `rgba(0,212,255,${Math.random() * 0.25 + 0.05})`; ctx.lineWidth = 0.5;
-        ctx.beginPath(); ctx.moveTo(nx(i), cy); ctx.lineTo(nx(j), cy); ctx.stroke();
-      }
-      ctx.strokeStyle = color; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(nx(0), cy - 12); ctx.quadraticCurveTo(W / 2, 25, nx(seqLen - 1), cy - 12); ctx.stroke();
-      ctx.fillStyle = "#aaa"; ctx.font = "9px monospace"; ctx.textAlign = "center";
-      ctx.fillText("Direct O(1) path — any token to any other token", W / 2, 14);
     }
-    for (let i = 0; i < seqLen; i++) {
-      ctx.beginPath(); ctx.arc(nx(i), cy, 10, 0, Math.PI * 2);
-      ctx.fillStyle = i === 0 ? "#88aaff" : i === seqLen - 1 ? "#ff7043" : color;
-      ctx.globalAlpha = 0.85; ctx.fill(); ctx.globalAlpha = 1;
-      ctx.fillStyle = "#fff"; ctx.font = "8px monospace"; ctx.textAlign = "center"; ctx.fillText(i + 1, nx(i), cy + 3);
-    }
-    ctx.textAlign = "left";
-  }, [seqLen, mode, color]);
+    ctx.fillStyle = color + "bb"; ctx.font = "10px monospace";
+    ctx.fillText("← position t →", W / 2 - 50, H - 4);
+    ctx.save(); ctx.translate(10, H / 2); ctx.rotate(-Math.PI / 2);
+    ctx.fillText("dimension d ↑", -40, 0); ctx.restore();
+  }, [T, D]);
 
   return (
-    <InteractiveWrap label="RNN vs TRANSFORMER — INFORMATION FLOW" color={color}>
-      <Slider label="Sequence length" min={4} max={32} val={seqLen} step={1} onChange={setSeqLen} color={color} />
-      <BtnRow options={["RNN", "LSTM", "Transformer"]} active={mode} onSelect={setMode} color={color} />
-      <canvas ref={cvRef} width={420} height={180} style={{ width: "100%", maxWidth: 420, borderRadius: 8, display: "block", margin: "8px 0" }} />
-      <OutputGrid cards={[
-        { label: "Steps: first→last", value: mode === "Transformer" ? "1 direct" : `${seqLen - 1} serial`, color },
-        { label: "Parallelizable", value: mode === "Transformer" ? "Yes ✓" : "No", color: "#aaa" },
-        { label: "Memory", value: mode === "Transformer" ? `O(n²)` : mode === "LSTM" ? "O(4n)" : "O(n)", color: "#888" }
-      ]} />
-    </InteractiveWrap>
+    <LabWrap title="Sinusoidal Positional Encoding §4.10" color={color}>
+      <canvas ref={ref} style={{ width: "100%", height: 200, display: "block", borderRadius: 8, marginBottom: 10 }} />
+      <Slider label="Sequence length T" min={8} max={64} val={T} onChange={setT} color={color} />
+      <Slider label="Embedding dim D" min={16} max={256} step={8} val={D} onChange={setD} color={color} />
+      <p style={{ fontSize: 11, color: "#556", fontFamily: "monospace", margin: "4px 0 0" }}>
+        pos-enc[t,d] = sin(t/10000^(d/D)) or cos(…). Different frequencies encode position uniquely.
+        Brightness = value (−1 to 1).
+      </p>
+    </LabWrap>
   );
 }
 
-// CNN Architecture
-function CNNArch({ color }) {
-  const [imgSize, setImgSize] = useState(64);
-  const [blocks, setBlocks] = useState(3);
-  const [initF, setInitF] = useState(32);
-  const [fcSize, setFcSize] = useState(256);
-  const [skipConn, setSkipConn] = useState(false);
-  const [batchNorm, setBatchNorm] = useState(false);
+// ─── LAB: Transformer Architecture ───────────────────────────────────────────
+function LabTransformer({ color }) {
+  const [model, setModel] = useState("GPT");
+  const [d, setD] = useState(768);
+  const [heads, setHeads] = useState(12);
+  const [layers, setLayers] = useState(12);
+  const [seqLen, setSeqLen] = useState(1024);
+  const params = () => {
+    const attnParams = layers * (4 * d * d + 4 * d); // Q,K,V,O projections
+    const mlpParams = layers * (8 * d * d + 5 * d); // 2 FC + biases
+    const embedParams = 50257 * d; // vocab embed
+    return attnParams + mlpParams + embedParams;
+  };
+  const flops = () => params() * 2 * seqLen;
+  const fmt = n => n > 1e9 ? (n / 1e9).toFixed(1) + "B" : n > 1e6 ? (n / 1e6).toFixed(0) + "M" : n > 1e3 ? (n / 1e3).toFixed(0) + "K" : n;
+  const kvCache = layers * 2 * seqLen * d * 2 / 1e9; // fp16 bytes → GB
 
-  let params = 0, curSz = imgSize, curF = 3, depth = 0;
-  const stages = [];
-  for (let i = 0; i < blocks; i++) {
-    const fi = initF * (2 ** i);
-    params += 3 * 3 * curF * fi + fi; if (batchNorm) params += 2 * fi;
-    params += 3 * 3 * fi * fi + fi; if (batchNorm) params += 2 * fi;
-    const outSz = Math.floor(curSz / 2);
-    stages.push({ inSz: curSz, outSz, inF: curF, outF: fi });
-    depth += 2 + (batchNorm ? 2 : 0); curSz = outSz; curF = fi;
-  }
-  params += curSz * curSz * curF * fcSize + fcSize + fcSize * 10 + 10; depth += 2;
-  const fmt = n => n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : `${n}`;
-
-  const cvRef = useCanvas((ctx, W, H) => {
-    ctx.fillStyle = "#0d0f13"; ctx.fillRect(0, 0, W, H);
-    const stageW = (W - 80) / (stages.length + 2);
-    const drawBox = (x, h, w, c, label) => {
-      ctx.fillStyle = c; ctx.fillRect(x, H / 2 - h / 2, w, h);
-      ctx.fillStyle = "#aaa"; ctx.font = "8px monospace"; ctx.textAlign = "center"; ctx.fillText(label, x + w / 2, H / 2 + h / 2 + 12);
-    };
-    const inputH = Math.min(110, (imgSize / 224) * 110);
-    drawBox(10, inputH, 18, "rgba(100,120,255,0.6)", `${imgSize}²`);
-    let x = 36;
-    stages.forEach((s, i) => {
-      const bh = Math.min(100, (s.inSz / 224) * 100);
-      drawBox(x, bh, stageW - 4, `${color}55`, `${s.outF}f`);
-      if (skipConn && i > 0) { ctx.strokeStyle = "rgba(255,180,70,0.4)"; ctx.lineWidth = 1; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(x - stageW, H / 2); ctx.lineTo(x + stageW / 2, H / 2); ctx.stroke(); ctx.setLineDash([]); }
-      ctx.fillStyle = "rgba(255,100,100,0.4)"; const ph = bh / 2; ctx.fillRect(x + stageW - 4, H / 2 - ph / 2, 7, ph);
-      x += stageW;
-    });
-    drawBox(x + 4, 45, 18, "rgba(255,180,70,0.5)", "FC");
-    drawBox(x + 28, 28, 14, "rgba(255,100,100,0.5)", "out");
-    ctx.textAlign = "left";
-  }, [imgSize, blocks, initF, fcSize, skipConn, batchNorm, color]);
+  const models = {
+    GPT: { desc: "Causal decoder-only. Predicts next token.", arch: "embed → [causal-self-att + ffn] × N → lm-head" },
+    BERT: { desc: "Bidirectional encoder. Masked LM pre-training.", arch: "embed → [self-att + ffn] × N → [CLS] → head" },
+    ViT: { desc: "Image patches as tokens. Classification.", arch: "patch-embed → [self-att + ffn] × N → [CLS] → MLP" },
+  };
 
   return (
-    <InteractiveWrap label="CNN ARCHITECTURE BUILDER" color={color}>
-      <Slider label="Input image size" min={28} max={224} val={imgSize} step={4} onChange={setImgSize} color={color} />
-      <Slider label="Conv blocks" min={1} max={6} val={blocks} step={1} onChange={setBlocks} color={color} />
-      <Slider label="Initial filters" min={8} max={64} val={initF} step={8} onChange={setInitF} color={color} />
-      <Slider label="FC hidden size" min={64} max={1024} val={fcSize} step={64} onChange={setFcSize} color={color} />
-      <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-        {[["Skip Connections", skipConn, setSkipConn], ["Batch Norm", batchNorm, setBatchNorm]].map(([lbl, val, set]) => (
-          <button key={lbl} onClick={() => set(v => !v)} style={{ padding: "5px 12px", borderRadius: 7, border: `1px solid ${color}`, background: val ? color : "transparent", color: val ? "#000" : color, fontFamily: "monospace", fontSize: 11, cursor: "pointer" }}>
-            {lbl}{val ? " ✓" : ""}
-          </button>
-        ))}
+    <LabWrap title="Transformer Architecture §5.3" color={color}>
+      <BtnRow options={["GPT", "BERT", "ViT"]} active={model} onSelect={setModel} color={color} />
+      <div style={{ background: "#0a0c10", borderRadius: 8, padding: "10px 14px", marginBottom: 10, fontFamily: "monospace", fontSize: 11, color: "#667" }}>
+        <div style={{ color, marginBottom: 4 }}>{models[model].desc}</div>
+        <div>{models[model].arch}</div>
       </div>
-      <canvas ref={cvRef} width={420} height={140} style={{ width: "100%", maxWidth: 420, borderRadius: 8, display: "block", margin: "8px 0" }} />
-      <OutputGrid cards={[
-        { label: "Total Params", value: fmt(params), color },
-        { label: "Final feat map", value: `${stages[stages.length - 1]?.outSz || "?"}×${stages[stages.length - 1]?.outSz || "?"}×${stages[stages.length - 1]?.outF || 3}`, color: "#aaa" },
-        { label: "Depth", value: depth, color: "#888" }
-      ]} />
-    </InteractiveWrap>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <Slider label="d_model" min={64} max={2048} step={64} val={d} onChange={setD} color={color} />
+        <Slider label="Heads H" min={1} max={32} val={heads} onChange={setHeads} color={color} />
+        <Slider label="Layers N" min={1} max={96} val={layers} onChange={setLayers} color={color} />
+        <Slider label="Seq len T" min={64} max={4096} step={64} val={seqLen} onChange={setSeqLen} color={color} />
+      </div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+        <StatBox label="Params" val={fmt(params())} color={color} />
+        <StatBox label="d/head" val={Math.floor(d / heads)} color={color} />
+        <StatBox label="KV-cache" val={kvCache.toFixed(2)} unit="GB" color="#7a7aff" />
+        <StatBox label="FLOPs/tok" val={fmt(flops() / seqLen)} color="#ff8844" />
+      </div>
+    </LabWrap>
   );
 }
 
-// ─── DATA ─────────────────────────────────────────────────────────────────────
-const CHAPTERS = [
-  { id: "ml", icon: "◈", color: "#4fffb0", title: "Machine Learning", sub: "Teaching machines from data",
-    sections: [
-      { title: "What is Learning?", concept: `A machine "learns" when it adjusts internal parameters to minimize the gap between what it predicts and what actually happened.\n\nThe core task: given input x, predict output y by finding a function f_θ(x) ≈ y, where θ (theta) are the learnable parameters.\n\nReal world: Netflix predicts your rating before you watch. Gmail predicts spam. Both are functions mapping inputs → outputs, found by minimizing error on millions of examples.`, math: String.raw`\text{Goal: find } \theta \text{ such that } f_\theta(\mathbf{x}) \approx y`, math2: String.raw`\text{Loss} = \mathcal{L}(\theta) = \frac{1}{n}\sum_{i=1}^n \ell(f_\theta(x_i),\, y_i)`, intuition: "Learning = optimization. You have a knob (θ) you can turn. The loss function tells you how wrong you are. Learning = finding the knob setting that makes you least wrong.", Lab: LossSurface },
-      { title: "Linear Regression", concept: `The simplest model: predict a continuous value as a weighted sum of inputs.\n\n  ŷ = w·x + b\n  w = weight (slope)\n  b = bias (intercept)\n\nLoss = MSE:  (1/n) Σ(yᵢ - ŷᵢ)²\n\nReal world: Predict house price from sq. footage. Drag sliders to fit manually, then run gradient descent automatically.`, math: String.raw`\hat{y} = w \cdot x + b`, math2: String.raw`\mathcal{L}(w,b) = \frac{1}{n}\sum_{i=1}^{n}(y_i - (wx_i + b))^2`, intuition: "The loss landscape for linear regression is a perfect bowl (convex). Gradient descent always finds the global minimum — no risk of getting stuck in a local minimum.", Lab: LinearRegression },
-      { title: "Gradient Descent", concept: `How does the model find good weights? By walking downhill on the loss surface.\n\n  θ ← θ − α · ∂L/∂θ\n\n  α = learning rate (step size)\n  ∂L/∂θ = gradient (direction of steepest ascent, go opposite)\n\nVariants: SGD (1 sample), Mini-batch (32-512 samples), Adam (adaptive per-param learning rates).\n\nReal world: GPT-4 trained with AdamW. Same math, incomprehensible scale.`, math: String.raw`\theta_{t+1} = \theta_t - \alpha \cdot \nabla_\theta \mathcal{L}(\theta_t)`, math2: String.raw`\text{Adam: } m_t = \beta_1 m_{t-1} + (1-\beta_1)g_t,\quad \theta \leftarrow \theta - \frac{\alpha \hat{m}_t}{\sqrt{\hat{v}_t}+\epsilon}`, intuition: "Too large α: overshoot the minimum and diverge. Too small: converge too slowly. Learning rate schedules (warmup + cosine decay) are standard in LLM training.", Lab: GradientDescent },
-      { title: "Classification & Logistic Regression", concept: `Predict a category instead of a number. Squash linear output to [0,1] via sigmoid, interpret as probability.\n\n  P(y=1|x) = σ(wx+b) = 1/(1+e^{-z})\n\nLoss = Binary Cross-Entropy:\n  L = -[y·log(ŷ) + (1-y)·log(1-ŷ)]\n\nReal world: Credit card fraud. Adjust threshold to trade false positives vs false negatives.`, math: String.raw`\hat{y} = \sigma(wx+b) = \frac{1}{1+e^{-(wx+b)}}`, math2: String.raw`\mathcal{L} = -\frac{1}{n}\sum_i \bigl[y_i \log \hat{y}_i + (1-y_i)\log(1-\hat{y}_i)\bigr]`, intuition: "Sigmoid maps ℝ → (0,1). Input +4 → prob 0.98. Input -4 → 0.02. Input 0 → 0.5 (max uncertainty). The decision boundary is the hyperplane where z = 0.", Lab: Logistic }
-    ]
-  },
-  { id: "nn", icon: "⬡", color: "#ff7043", title: "Neural Networks", sub: "Stacking layers for abstraction",
-    sections: [
-      { title: "The Artificial Neuron", concept: `A single compute unit: weighted sum of inputs + bias → activation function.\n\n  z = w₁x₁ + w₂x₂ + ... + wₙxₙ + b\n  a = f(z)\n\nActivations:\n  ReLU: max(0,z) — fast, prevents vanishing gradients\n  Sigmoid: 1/(1+e⁻ᶻ) — squashes to (0,1)\n  Tanh: (eᶻ-e⁻ᶻ)/(eᶻ+e⁻ᶻ) — squashes to (-1,1)\n  GELU: z·Φ(z) — smooth, used in GPT/BERT\n\nReal world: Each neuron detects something — a curve, a phoneme, a keyword.`, math: String.raw`a = f\!\left(\mathbf{w}^\top \mathbf{x} + b\right) = f\!\left(\sum_{i=1}^{n} w_i x_i + b\right)`, math2: String.raw`\text{ReLU}(z) = \max(0,z) \qquad \text{GELU}(z) = z\cdot\Phi(z)`, intuition: "ReLU doesn't saturate for large positive inputs — gradient stays 1, not ~0. This prevents vanishing gradients in deep networks. The cost: 'dead neurons' where z < 0 always (gradient=0).", Lab: Neuron },
-      { title: "Multi-Layer Perceptron (MLP)", concept: `Stack neurons in layers. Each layer learns increasingly abstract features.\n\n  h⁽ˡ⁾ = f(W⁽ˡ⁾ h⁽ˡ⁻¹⁾ + b⁽ˡ⁾)\n\nWhy depth works:\n  Layer 1: raw features (edges, bigrams)\n  Layer 2: local patterns (shapes, phrases)\n  Layer N: semantic concepts (faces, sentiment)\n\nUniversal Approximation Theorem: A 1-hidden-layer MLP with enough neurons can approximate any continuous function.\n\nReal world: Click-through rate at Google. Input: user×ad features. Output: P(click).`, math: String.raw`\mathbf{h}^{(l)} = f\!\left(W^{(l)} \mathbf{h}^{(l-1)} + \mathbf{b}^{(l)}\right), \quad l = 1,\ldots,L`, math2: String.raw`\text{params} = \sum_{l=1}^{L} \bigl(d_{l} \cdot d_{l-1} + d_{l}\bigr)`, intuition: "More layers = more abstraction. But too deep = vanishing gradients + overfitting. Dropout, BatchNorm, and residual connections are the tools that made very deep networks trainable.", Lab: MLP },
-      { title: "Backpropagation", concept: `Train all weights by computing how each contributes to loss. Backprop applies the chain rule layer by layer.\n\n  Forward: compute ŷ → compute L\n  Backward: propagate ∂L/∂W backwards via chain rule\n\n  dz/dx = (dz/dg)·(dg/dx)\n\nReal world: PyTorch builds a computational graph during forward pass. .backward() traverses it in reverse. You never write backprop manually.`, math: String.raw`\frac{\partial \mathcal{L}}{\partial W^{(l)}} = \delta^{(l)} \bigl(\mathbf{h}^{(l-1)}\bigr)^\top, \quad \delta^{(l)} = \bigl(W^{(l+1)}\bigr)^\top \delta^{(l+1)} \odot f'(z^{(l)})`, math2: String.raw`W^{(l)} \leftarrow W^{(l)} - \alpha \frac{\partial \mathcal{L}}{\partial W^{(l)}}`, intuition: "The vanishing gradient problem: sigmoid/tanh gradients squash to near-zero for large inputs. After 10 layers, the gradient multiplied by ~0 ten times → effectively zero. ReLU and residual connections solve this.", Lab: Backprop },
-      { title: "Overfitting & Regularization", concept: `A model that memorizes training data but fails on new data is overfit.\n\nRegularization techniques:\n  L2 (Weight Decay): add λ‖w‖² to loss → penalizes large weights\n  L1: add λ‖w‖₁ → sparse weights\n  Dropout: randomly zero p fraction of neurons during training\n  Early Stopping: halt when validation loss stops improving\n  BatchNorm: normalize activations per batch\n\nKey hyperparameters: α, batch size, hidden dims, layers, dropout, λ, optimizer.`, math: String.raw`\mathcal{L}_{\text{reg}} = \mathcal{L} + \lambda \sum_{l} \|W^{(l)}\|_F^2`, math2: String.raw`\text{Dropout: } \tilde{h}_i = \frac{h_i \cdot \text{Bernoulli}(1-p)}{1-p}`, intuition: "Dropout forces the network to learn redundant representations — it can't rely on any single neuron. At test time all neurons are active, equivalent to averaging an ensemble of thinned networks.", Lab: Regularization }
-    ]
-  },
-  { id: "cnn", icon: "▦", color: "#7c83fd", title: "CNNs", sub: "Exploiting spatial structure",
-    sections: [
-      { title: "Why Not MLPs for Images?", concept: `224×224 RGB image = 150,528 inputs. One FC layer to 1000 units = 150M parameters. Problems:\n  1. Quadratic compute in image size\n  2. Overfitting: too many params, too few constraints\n  3. No spatial structure: distant pixels treated same as adjacent\n\nKey insight: Images have LOCAL structure. An edge detector works the same wherever in the image the edge appears.\n\nSolution: Share parameters spatially via a convolutional filter.`, math: String.raw`224 \times 224 \times 3 = 150{,}528 \;\xrightarrow{\;\text{vs}\;}\; 3{\times}3 \text{ conv filter} = 27 \text{ params (reused everywhere)}`, math2: String.raw`\text{Spatial translation equivariance: } f(T_\delta x) = T_\delta f(x)`, intuition: "Parameter sharing is the core innovation. The filter detecting a vertical edge in the top-left is identical to the one in the bottom-right. This is translation equivariance.", Lab: ParamSharing },
-      { title: "The Convolution Operation", concept: `A filter (kernel) slides across the input, computing a dot product at each position.\n\n  output[i,j] = Σₘ Σₙ input[i+m, j+n] · kernel[m,n]\n\nKey parameters:\n  kernel_size: filter dims (3×3, 5×5)\n  stride: step size when sliding\n  padding: zeros around input to control output size\n  num_filters: output channels\n\nOutput size: ⌊(W - K + 2P) / S⌋ + 1\n\nReal world: First layers of ResNet learn edge detectors. Middle: curves, textures. Late: dog faces, car wheels.`, math: String.raw`(I * K)[i,j] = \sum_{m=0}^{k-1}\sum_{n=0}^{k-1} I[i{\cdot}s{+}m,\;j{\cdot}s{+}n] \cdot K[m,n]`, math2: String.raw`\text{output size} = \left\lfloor\frac{W - K + 2P}{S}\right\rfloor + 1`, intuition: "Each filter specializes. Filter 1: horizontal edges. Filter 2: vertical edges. Filter 3: color transitions. With 64 filters, you get 64 feature maps stacked as channels.", Lab: Convolution },
-      { title: "Pooling & Full Architecture", concept: `Pooling reduces spatial resolution while retaining important activations.\n\n  Max pooling: take max in each k×k window\n  Average pooling: take mean\n  Global Average Pooling: collapse entire spatial dim\n\nFull CNN:\n  Input → [Conv → BN → ReLU → Pool]×N → GAP → FC → Softmax\n\nResNet skip connection: y = F(x) + x\n  Even if F(x)≈0, gradients flow through +x. Enables 152-layer networks.\n\nLandmarks: LeNet (1998), AlexNet (2012), VGG (2014), ResNet (2015), EfficientNet (2019).`, math: String.raw`\text{MaxPool: } y_{i,j} = \max_{(m,n) \in \mathcal{R}_{i,j}} X_{m,n}`, math2: String.raw`\mathbf{y} = \mathcal{F}(\mathbf{x}, \{W_i\}) + \mathbf{x} \quad \text{(ResNet skip connection)}`, intuition: "Skip connections reframe learning: instead of mapping H(x), learn residual F(x) = H(x)-x. If identity is already good, F(x)≈0 is easy. This is why ResNets can be 152 layers deep.", Lab: CNNArch }
-    ]
-  },
-  { id: "transformer", icon: "◎", color: "#00d4ff", title: "Transformers", sub: "Attention is all you need",
-    sections: [
-      { title: "Problems with RNNs", concept: `Before 2017, sequences used Recurrent Neural Networks.\n\n  RNN: hₜ = f(Whₜ₋₁ + Wxₜ)  — hidden state carries memory\n\nProblems:\n  1. Sequential: can't parallelize. Step t needs step t-1.\n  2. Vanishing gradients: 1000 Jacobians multiplied → ~0\n  3. Fixed-size bottleneck: entire sequence compressed into one hₜ\n  4. Long-range: "The trophy didn't fit in the bag because it was too big" — what does 'it' refer to?\n\n2017 insight: replace recurrence with attention — directly connects any two positions.`, math: String.raw`h_t = \tanh(W_h h_{t-1} + W_x x_t + b) \quad \text{(sequential, limited range)}`, math2: String.raw`\text{Attention: connect position } i \text{ to } j \text{ in } O(1) \text{ steps regardless of distance}`, intuition: "Even LSTMs struggle at 500+ tokens. Transformers have no 'distance' problem: every token directly attends to every other via the attention matrix. The cost: O(n²) memory.", Lab: RNNvsTransformer },
-      { title: "Self-Attention Mechanism", concept: `For each token, attention asks: "Which other tokens are most relevant to understanding me?"\n\nStep 1: Project each token x into Q, K, V vectors\n  Q = xWQ  ("What am I looking for?")\n  K = xWK  ("What do I offer?")\n  V = xWV  ("What will I pass on?")\n\nStep 2: Scores = QKᵀ / √dₖ  [scaling prevents softmax saturation]\n\nStep 3: Softmax → attention weights\n\nStep 4: Output = weighted sum of Values\n\nReal world: "The cat sat on the mat because it was comfortable" — 'it' attends strongly to 'mat'.`, math: String.raw`\text{Attention}(Q,K,V) = \text{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\right)\!V`, math2: String.raw`Q = XW^Q,\quad K = XW^K,\quad V = XW^V \quad W^Q,W^K,W^V \in \mathbb{R}^{d \times d_k}`, intuition: "QKᵀ is a dot product similarity matrix. High dot product = these tokens should attend to each other. Dividing by √dₖ prevents large dot products that push softmax into saturated near-zero gradient regions.", Lab: Attention },
-      { title: "Multi-Head Attention & FFN", concept: `Run attention H times in parallel with different learned projections.\n\nWhy? Each head can specialize:\n  Head 1: syntax (subject-verb agreement)\n  Head 2: coreference (pronoun→antecedent)\n  Head 3: semantic similarity\n  Head H: positional patterns\n\nFull Transformer Block:\n  x → LayerNorm → MHA → +x\n  → LayerNorm → FFN → +x\n\nFFN: two linear layers, 4× expansion\n  FFN(x) = max(0, xW₁+b₁)W₂+b₂\n\nGPT-3: 96 layers, 96 heads, d_model=12288, 175B params total.`, math: String.raw`\text{MHA}(Q,K,V) = \text{Concat}(\text{head}_1,\ldots,\text{head}_h)W^O`, math2: String.raw`\text{FFN}(\mathbf{x}) = \max(0,\, \mathbf{x}W_1 + \mathbf{b}_1)W_2 + \mathbf{b}_2`, intuition: "The FFN is where most 'factual knowledge' is stored in LLMs. Attention routes information; FFN transforms it. The 4× expansion in FFN creates a high-dim workspace, then projects back.", Lab: MultiHead },
-      { title: "Scaling, Pretraining & RLHF", concept: `Training objective: predict the next token. Simple, scalable.\n\nScaling Laws (Kaplan 2020): L(N) ∝ N^{-0.076}\n  Performance scales as power law with compute, data, params\n\nPipeline:\n  1. Pretrain: next-token prediction on internet text\n  2. SFT: supervised fine-tuning on curated examples\n  3. Reward Model: trained from human preference rankings\n  4. RLHF: PPO optimization against reward model\n\nFine-tuning (LoRA): instead of updating W (d×d), learn W + AB where A is (d×r), B is (r×d), r ≪ d\n  7B model: full FT = 28GB VRAM. QLoRA = 5GB. Same task performance.`, math: String.raw`\mathcal{L}_{\text{LM}} = -\sum_{t=1}^{T} \log P_\theta(x_t \mid x_1, \ldots, x_{t-1})`, math2: String.raw`\text{LoRA: } W' = W + \Delta W = W + \underbrace{A}_{d\times r}\underbrace{B}_{r\times d},\quad r \ll d`, intuition: "LoRA's insight: weight updates during fine-tuning have low intrinsic rank. Instead of updating a 4096×4096 matrix (16M params), learn A (4096×8) and B (8×4096) — 65K params. Same expressive power, 256× fewer trainable parameters.", Lab: Scaling }
-    ]
-  },
-  { id: "multimodal", icon: "◉", color: "#ffb347", title: "Multimodal", sub: "Seeing, reading, hearing",
-    sections: [
-      { title: "Modality Fusion via Tokenization", concept: `Core challenge: how do you process images, audio, and text in one model?\n\nAnswer: convert everything to tokens in a shared embedding space.\n\n  Text → BPE tokens → embeddings ∈ ℝᵈ\n  Images → patch embeddings (ViT: 16×16 patches) → embeddings ∈ ℝᵈ\n  Audio → spectrogram patches → embeddings ∈ ℝᵈ\n\nOnce everything is tokens in ℝᵈ, a standard transformer processes them identically. The model doesn't care which modality a token came from.\n\nReal world: Gemini 1.5 Pro processes up to 1M tokens = ~1hr video + full codebase + book.`, math: String.raw`\mathbf{T} = \bigl[\phi_{\text{img}}(x_{\text{img}})\,;\, \phi_{\text{txt}}(x_{\text{txt}})\,;\, \phi_{\text{aud}}(x_{\text{aud}})\bigr] \in \mathbb{R}^{N \times d}`, math2: String.raw`\phi_{\text{img}}: \mathbb{R}^{H \times W \times 3} \to \mathbb{R}^{\frac{HW}{p^2} \times d} \quad \text{(patch size } p\text{)}`, intuition: "The key abstraction: modality-specific encoders convert raw pixels/audio/text into token vectors. After that, it's all just transformer attention on sequences of vectors.", Lab: Tokenization },
-      { title: "ViT & CLIP", concept: `ViT (2020): apply transformers directly to image patches.\n  1. Split image into 16×16 patches → linear projection\n  2. Prepend [CLS] token, add position embeddings\n  3. Feed through transformer encoder\n  4. Use [CLS] for classification\n\nCLIP (OpenAI 2021): train image + text encoders jointly on 400M web image-text pairs.\n\n  Contrastive loss: maximize sim of matched pairs, minimize unmatched.\n\nCLIP zero-shot: compare image embedding to "a photo of a {class}" embeddings → pick highest sim.\n\nPowers: DALL-E, Stable Diffusion, GPT-4V, reverse image search.`, math: String.raw`\mathcal{L}_\text{CLIP} = -\frac{1}{N}\sum_i \log \frac{e^{\langle z_i^I, z_i^T\rangle/\tau}}{\sum_j e^{\langle z_i^I, z_j^T\rangle/\tau}}`, math2: String.raw`\text{ViT: } \frac{H \times W}{p^2} \text{ patch tokens} + 1\text{ [CLS] token}`, intuition: "CLIP's zero-shot power comes from aligning vision and language. Once aligned, anything expressible in language is a query: 'find images of a crowded marketplace at night' — no fine-tuning needed.", Lab: CLIP },
-      { title: "Diffusion Models", concept: `Generate images by learning to reverse a noise process.\n\nForward process (fixed): gradually add Gaussian noise over T steps until image ≈ pure noise.\n\nReverse process (learned): train a U-Net to predict and remove noise at each step: noise → image.\n\nConditioning: inject text embedding via cross-attention. Network removes noise towards the described image.\n\nText-to-image pipeline:\n  1. CLIP text encoder → text embedding\n  2. Diffusion denoiser (U-Net) conditioned on embedding\n  3. Decode latents → pixels (Latent Diffusion)\n\nReal world: Stable Diffusion, DALL-E 3, Midjourney, Sora (video), drug discovery.`, math: String.raw`\mathcal{L} = \mathbb{E}_{t,x_0,\varepsilon}\!\left[\|\varepsilon - \varepsilon_\theta\!\left(\sqrt{\bar\alpha_t}\,x_0 + \sqrt{1-\bar\alpha_t}\,\varepsilon,\;t\right)\|^2\right]`, math2: String.raw`x_{t-1} = \frac{1}{\sqrt{\alpha_t}}\!\left(x_t - \frac{1-\alpha_t}{\sqrt{1-\bar\alpha_t}}\varepsilon_\theta\right) + \sigma_t z`, intuition: "Diffusion learns the score function: ∇_x log p(x) — the direction in pixel space that makes an image more realistic. At each step, it says 'change it this way to be more likely'. Classifier-free guidance amplifies this.", Lab: Diffusion },
-      { title: "Frontier Models & Fine-Tuning", concept: `Modern frontier models (Claude 3.5, GPT-4o, Gemini 1.5):\n  • Native multimodal — vision+text in a single unified model\n  • Context windows: 128K–1M tokens\n  • Tool use, code execution, function calling\n  • RLHF + Constitutional AI for alignment\n\nFine-tuning a multimodal model (practical):\n  1. Choose base (Llava, Qwen-VL, InternVL)\n  2. Prepare instruction-following data (image+text pairs)\n  3. QLoRA fine-tune on 1-2 GPUs\n  4. Evaluate on task-specific benchmark\n  5. Deploy with quantization (4-bit GGUF)\n\nkarta use case: screenshot → patch embeddings + instruction text → joint attention → structured action output.`, math: String.raw`p(y \mid x_{\text{img}}, x_{\text{text}}) \approx \text{Transformer}\!\left([\phi_{\text{img}}(x)\,;\, \phi_{\text{txt}}(x)]\right)`, math2: String.raw`\text{QLoRA: quantize } W \text{ to 4-bit, add LoRA in } \mathbb{R}^{d \times r},\; r \in \{4,8,16,32\}`, intuition: "The entire landscape converges here: one transformer, trained with self-supervised objectives across all modalities, fine-tuned with RLHF, compressed with quantization, adapted with LoRA. Every concept from linear regression is still operating — just at scale.", Lab: FineTuning }
-    ]
+// ─── LAB: GPU & Batches ────────────────────────────────────────────────────────
+function LabGPU({ color }) {
+  const [batch, setBatch] = useState(32);
+  const [dtype, setDtype] = useState("FP16");
+  const [modelM, setModelM] = useState(7);
+  const bytesPerParam = { FP32: 4, FP16: 2, INT8: 1, INT4: 0.5 };
+  const bpp = bytesPerParam[dtype];
+  const modelGB = modelM * 1e9 * bpp / 1e9;
+  const activGB = batch * 512 * 1024 * bpp / 1e9; // rough estimate
+  const totalGB = modelGB + activGB;
+  const rtx4050Limit = 6;
+  const fits = totalGB < rtx4050Limit;
+
+  return (
+    <LabWrap title="GPU Memory & Batches §2.1" color={color}>
+      <Slider label="Batch size B" min={1} max={128} val={batch} onChange={setBatch} color={color} />
+      <Slider label="Model size (B params)" min={0.1} max={70} step={0.1} val={modelM} onChange={setModelM} color={color} />
+      <BtnRow options={["FP32", "FP16", "INT8", "INT4"]} active={dtype} onSelect={setDtype} color={color} />
+      <div style={{ margin: "10px 0" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "monospace", fontSize: 11, color: "#667", marginBottom: 4 }}>
+          <span>VRAM usage</span><span>{totalGB.toFixed(1)} / {rtx4050Limit} GB</span>
+        </div>
+        <div style={{ height: 16, background: "#111", borderRadius: 6, overflow: "hidden", position: "relative" }}>
+          <div style={{ height: "100%", width: `${Math.min(100, (modelGB / rtx4050Limit) * 100)}%`, background: color, transition: "width 0.3s" }} />
+          <div style={{ position: "absolute", top: 0, left: `${Math.min(100, (modelGB / rtx4050Limit) * 100)}%`, height: "100%", width: `${Math.min(100 - (modelGB / rtx4050Limit) * 100, (activGB / rtx4050Limit) * 100)}%`, background: "#7a7aff", transition: "all 0.3s" }} />
+          <div style={{ position: "absolute", top: 0, left: `${(rtx4050Limit / rtx4050Limit) * 100}%`, transform: "translateX(-50%)", height: "100%", width: 2, background: "#ff4444" }} />
+        </div>
+        <div style={{ display: "flex", gap: 12, fontFamily: "monospace", fontSize: 9, color: "#445", marginTop: 4 }}>
+          <span style={{ color }}>■ Model {modelGB.toFixed(1)}GB</span>
+          <span style={{ color: "#7a7aff" }}>■ Activations ~{activGB.toFixed(2)}GB</span>
+          <span style={{ color: "#ff4444" }}>| RTX 4050 limit 6GB</span>
+        </div>
+      </div>
+      <div style={{ background: fits ? "#0a1a0a" : "#1a0a0a", border: `1px solid ${fits ? "#44ff8844" : "#ff444444"}`, borderRadius: 8, padding: "8px 12px", fontFamily: "monospace", fontSize: 11, color: fits ? "#44ff88" : "#ff6666" }}>
+        {fits ? `✓ Fits in RTX 4050 6GB — batch=${batch}` : `✗ OOM — reduce batch, use INT4/INT8, or gradient checkpointing`}
+      </div>
+      <p style={{ fontSize: 11, color: "#556", fontFamily: "monospace", margin: "8px 0 0" }}>
+        "A GPU processes a batch that fits in memory almost as quickly as a single sample." — §2.1
+      </p>
+    </LabWrap>
+  );
+}
+
+// ─── LAB: Scaling Laws ────────────────────────────────────────────────────────
+function LabScaling({ color }) {
+  const [tokens, setTokens] = useState(300);
+  const models = [
+    { name: "GPT", year: 2018, params: 0.117, compute: 1.5 },
+    { name: "GPT-2", year: 2019, params: 1.5, compute: 50 },
+    { name: "BERT", year: 2018, params: 0.34, compute: 40 },
+    { name: "GPT-3", year: 2020, params: 175, compute: 3640 },
+    { name: "PaLM", year: 2022, params: 540, compute: 250000 },
+  ];
+  const loss = p => Math.max(1.8, 4.5 - 0.6 * Math.log10(p * tokens));
+
+  return (
+    <LabWrap title="Scaling Laws (Kaplan et al. 2020) §3.7" color={color}>
+      <div style={{ overflowX: "auto" }}>
+        <div style={{ minWidth: 380 }}>
+          {models.map(m => {
+            const l = loss(m.params);
+            return (
+              <div key={m.name} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                <span style={{ fontFamily: "monospace", fontSize: 10, color, minWidth: 55 }}>{m.name}</span>
+                <span style={{ fontFamily: "monospace", fontSize: 9, color: "#445", minWidth: 36 }}>{m.params}B</span>
+                <div style={{ flex: 1, height: 14, background: "#111", borderRadius: 4, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${(m.params / 540) * 100}%`, background: `linear-gradient(90deg,${color},${color}66)`, borderRadius: 4, minWidth: 4 }} />
+                </div>
+                <span style={{ fontFamily: "monospace", fontSize: 10, color: "#ff8844", minWidth: 48 }}>loss≈{l.toFixed(2)}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <Slider label="Training tokens (B)" min={10} max={2000} step={10} val={tokens} onChange={setTokens} color={color} />
+      <div style={{ background: "#0a0c0e", borderRadius: 8, padding: 10, fontFamily: "monospace", fontSize: 11, color: "#667", marginTop: 6 }}>
+        Chinchilla rule: ~20 tokens per parameter for optimal compute efficiency.<br />
+        {Math.round(tokens / 20)}B params optimal for {tokens}B tokens.
+      </div>
+    </LabWrap>
+  );
+}
+
+// ─── LAB: Normalization ───────────────────────────────────────────────────────
+function LabNorm({ color }) {
+  const [mode, setMode] = useState("BatchNorm");
+  const [B, setB] = useState(4);
+  const [D, setD] = useState(6);
+  const ref = useCanvas((ctx, W, H) => {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = "#07090b"; ctx.fillRect(0, 0, W, H);
+    const cellW = (W - 60) / D, cellH = (H - 40) / B;
+    for (let b = 0; b < B; b++) {
+      for (let d = 0; d < D; d++) {
+        const isBatch = mode === "BatchNorm" ? d === 2 : b === 1;
+        ctx.fillStyle = isBatch ? color + "55" : "#1a1f26";
+        ctx.fillRect(30 + d * cellW, 20 + b * cellH, cellW - 2, cellH - 2);
+        ctx.fillStyle = isBatch ? color : "#445";
+        ctx.font = "10px monospace";
+        ctx.fillText(`x`, 30 + d * cellW + cellW / 2 - 5, 20 + b * cellH + cellH / 2 + 4);
+      }
+    }
+    for (let d = 0; d < D; d++) { ctx.fillStyle = "#445"; ctx.font = "9px monospace"; ctx.fillText(`d${d + 1}`, 30 + d * cellW + cellW / 2 - 5, 16); }
+    for (let b = 0; b < B; b++) { ctx.fillStyle = "#445"; ctx.font = "9px monospace"; ctx.fillText(`b${b + 1}`, 4, 20 + b * cellH + cellH / 2 + 4); }
+    ctx.fillStyle = color; ctx.font = "11px monospace";
+    const label = mode === "BatchNorm" ? "↕ normalized across batch" : "↔ normalized across features";
+    ctx.fillText(label, 30, H - 6);
+  }, [mode, B, D]);
+
+  return (
+    <LabWrap title="BatchNorm vs LayerNorm §4.6" color={color}>
+      <BtnRow options={["BatchNorm", "LayerNorm"]} active={mode} onSelect={setMode} color={color} />
+      <canvas ref={ref} style={{ width: "100%", height: 180, display: "block", borderRadius: 8, marginBottom: 8 }} />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <Slider label="Batch size B" min={1} max={8} val={B} onChange={setB} color={color} />
+        <Slider label="Feature dim D" min={2} max={10} val={D} onChange={setD} color={color} />
+      </div>
+      <p style={{ fontSize: 11, color: "#556", fontFamily: "monospace", margin: "6px 0 0" }}>
+        BatchNorm normalizes across the batch dimension (highlighted column). LayerNorm normalizes across features per sample (highlighted row). LN works with batch=1 — essential for Transformers.
+      </p>
+    </LabWrap>
+  );
+}
+
+// ─── LAB: CLIP Contrastive ────────────────────────────────────────────────────
+function LabCLIP({ color }) {
+  const [tau, setTau] = useState(0.07);
+  const N = 4;
+  const images = ["🐱 cat photo", "🐶 dog photo", "🚗 car photo", "🌊 ocean photo"];
+  const texts = ["a photo of a cat", "a cute dog", "sports car", "ocean waves"];
+  // Simulated similarity matrix (diagonal = matched pairs)
+  const sim = images.map((_, i) => texts.map((_, j) => {
+    const base = i === j ? 1.0 : 0.1 + Math.random() * 0.3;
+    return base;
+  }));
+  const softmaxRow = row => { const exps = row.map(v => Math.exp(v / tau)); const s = exps.reduce((a, b) => a + b, 0); return exps.map(e => e / s); };
+  const attn = sim.map(softmaxRow);
+  const avgDiag = attn.reduce((s, row, i) => s + row[i], 0) / N;
+
+  return (
+    <LabWrap title="CLIP Contrastive Training §6.6" color={color}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+        <div>
+          <div style={{ fontFamily: "monospace", fontSize: 9, color: "#445", marginBottom: 6, textTransform: "uppercase" }}>Image-Text Similarity Matrix</div>
+          {attn.map((row, i) => (
+            <div key={i} style={{ display: "flex", gap: 3, marginBottom: 3, alignItems: "center" }}>
+              <span style={{ fontFamily: "monospace", fontSize: 9, color: color, minWidth: 50 }}>{images[i].split(" ")[0]}</span>
+              {row.map((v, j) => (
+                <div key={j} style={{ flex: 1, height: 22, background: i === j ? color : `rgba(100,100,200,${v * 2})`, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontFamily: "monospace", color: i === j ? "#000" : "#667" }}>
+                  {(v * 100).toFixed(0)}%
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+        <div>
+          <div style={{ fontFamily: "monospace", fontSize: 9, color: "#445", marginBottom: 6, textTransform: "uppercase" }}>Text labels</div>
+          {texts.map((t, i) => <div key={i} style={{ fontFamily: "monospace", fontSize: 10, color: "#667", marginBottom: 6, padding: "4px 8px", background: "#0f1115", borderRadius: 4 }}>{t}</div>)}
+        </div>
+      </div>
+      <Slider label="Temperature τ" min={0.01} max={1} step={0.01} val={tau} onChange={setTau} color={color} />
+      <div style={{ display: "flex", gap: 8 }}>
+        <StatBox label="Avg match prob" val={(avgDiag * 100).toFixed(0)} unit="%" color={color} />
+        <StatBox label="Temperature τ" val={tau.toFixed(2)} color={color} />
+      </div>
+    </LabWrap>
+  );
+}
+
+// ─── LAB: Diffusion ───────────────────────────────────────────────────────────
+function LabDiffusion({ color }) {
+  const [diffSteps, setDiffSteps] = useState(1000);
+  const [schedule, setSchedule] = useState("cosine");
+  const ref = useCanvas((ctx, W, H) => {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = "#07090b"; ctx.fillRect(0, 0, W, H);
+    const toX = t => t / diffSteps * (W - 40) + 20;
+    const toY = v => H - 20 - v * (H - 30);
+    // axes
+    ctx.strokeStyle = "#1e222a"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(20, 10); ctx.lineTo(20, H - 20); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(20, H - 20); ctx.lineTo(W - 10, H - 20); ctx.stroke();
+    // ᾱ_t for cosine
+    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2;
+    for (let i = 0; i <= 100; i++) {
+      const t = i / 100 * diffSteps;
+      const s = 0.008;
+      const alpha = schedule === "cosine"
+        ? Math.cos((t / diffSteps + s) / (1 + s) * Math.PI / 2) ** 2
+        : Math.exp(-0.0001 * t);
+      const m = i === 0 ? "moveTo" : "lineTo";
+      ctx[m](toX(t), toY(alpha));
+    }
+    ctx.stroke();
+    // linear
+    ctx.beginPath(); ctx.strokeStyle = "#4a9aff88"; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
+    for (let i = 0; i <= 100; i++) {
+      const t = i / 100 * diffSteps;
+      const alpha = 1 - t / diffSteps * 0.9999;
+      const m = i === 0 ? "moveTo" : "lineTo";
+      ctx[m](toX(t), toY(alpha));
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = color; ctx.font = "11px monospace"; ctx.fillText("ᾱₜ (signal retained)", 30, 18);
+    ctx.fillStyle = "#4a9aff88"; ctx.fillText("linear schedule", 30, 34);
+    ctx.fillStyle = "#445"; ctx.fillText("t=0 (clean)", 26, H - 4);
+    ctx.fillText("t=T (noise)", W - 80, H - 4);
+  }, [diffSteps, schedule]);
+
+  return (
+    <LabWrap title="Diffusion Noise Schedule §7.2" color={color}>
+      <canvas ref={ref} style={{ width: "100%", height: 180, display: "block", borderRadius: 8, marginBottom: 10 }} />
+      <BtnRow options={["cosine", "linear"]} active={schedule} onSelect={setSchedule} color={color} />
+      <Slider label="T (diffusion steps)" min={100} max={2000} step={100} val={diffSteps} onChange={setDiffSteps} color={color} />
+      <p style={{ fontSize: 11, color: "#556", fontFamily: "monospace", margin: "6px 0 0" }}>
+        ᾱₜ = product of (1−βₜ). As t→T, signal → pure noise. The model learns to reverse this process.
+        Cosine schedule (Ho et al.) degrades signal more gradually than linear.
+      </p>
+    </LabWrap>
+  );
+}
+
+// ─── LAB: Quantization & LoRA ─────────────────────────────────────────────────
+function LabQuantLoRA({ color }) {
+  const [modelB, setModelB] = useState(7);
+  const [rank, setRank] = useState(16);
+  const [mode, setMode] = useState("Quantization");
+
+  if (mode === "Quantization") {
+    const dtypes = [
+      { name: "FP32", bpp: 4, color: "#ff6666", note: "Full precision training" },
+      { name: "FP16", bpp: 2, color: "#ff8844", note: "Standard inference" },
+      { name: "INT8", bpp: 1, color: "#ffbb44", note: "GPTQ / llama.cpp Q8" },
+      { name: "Q4_1", bpp: 0.625, color: color, note: "llama.cpp: d,m in FP16 + 4-bit entries" },
+      { name: "INT4", bpp: 0.5, color: "#44ffbb", note: "Aggressive — marginal quality loss" },
+    ];
+    const limit = 6;
+    return (
+      <LabWrap title="Quantization §8.2" color={color}>
+        <BtnRow options={["Quantization", "LoRA"]} active={mode} onSelect={setMode} color={color} />
+        <Slider label="Model size (B params)" min={1} max={70} step={0.5} val={modelB} onChange={setModelB} color={color} />
+        <div style={{ marginTop: 8 }}>
+          {dtypes.map(dt => {
+            const gb = modelB * 1e9 * dt.bpp / 1e9;
+            const fits = gb < limit;
+            return (
+              <div key={dt.name} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                <span style={{ fontFamily: "monospace", fontSize: 10, color: dt.color, minWidth: 40 }}>{dt.name}</span>
+                <div style={{ flex: 1, height: 18, background: "#111", borderRadius: 4, overflow: "hidden", position: "relative" }}>
+                  <div style={{ height: "100%", width: `${Math.min(100, (gb / limit) * 100)}%`, background: dt.color, opacity: 0.7, borderRadius: 4, transition: "width 0.3s" }} />
+                  <div style={{ position: "absolute", right: 6, top: 2, fontFamily: "monospace", fontSize: 10, color: "#fff" }}>{gb.toFixed(1)}GB {!fits && "⚠"}</div>
+                </div>
+                <span style={{ fontFamily: "monospace", fontSize: 9, color: fits ? "#44ff88" : "#ff4444", minWidth: 16 }}>{fits ? "✓" : "✗"}</span>
+              </div>
+            );
+          })}
+          <div style={{ borderTop: "1px solid #222", marginTop: 6, paddingTop: 6, fontFamily: "monospace", fontSize: 9, color: "#445" }}>
+            Q4_1 detail: 32-entry blocks → 2 FP16 (d,m) + 16 bytes (4-bit entries) = 20 bytes vs 64 bytes (FP16). 3.2× compression.
+          </div>
+        </div>
+      </LabWrap>
+    );
   }
+
+  // LoRA view
+  const d = 4096;
+  const fullParams = d * d;
+  const loraParams = 2 * rank * d;
+  const ratio = loraParams / fullParams;
+  const fullGB = modelB * 1e9 * 2 / 1e9; // FP16
+  const loraGB = modelB * 1e9 * 0.5 / 1e9 + loraParams * 4 / 1e9; // INT4 base + FP32 LoRA
+
+  return (
+    <LabWrap title="LoRA & QLoRA §8.3" color={color}>
+      <BtnRow options={["Quantization", "LoRA"]} active={mode} onSelect={setMode} color={color} />
+      <div style={{ background: "#0a0c10", borderRadius: 8, padding: "10px 14px", marginBottom: 10, fontFamily: "monospace", fontSize: 12 }}>
+        <div style={{ color }}>W' = W + <span style={{ color: "#4a9aff" }}>B</span><span style={{ color: "#ff8844" }}>A</span></div>
+        <div style={{ color: "#445", fontSize: 10, marginTop: 4 }}>W ∈ ℝ^(d×d) frozen · A ∈ ℝ^(r×d) · B ∈ ℝ^(d×r) trainable</div>
+      </div>
+      <Slider label="Model size (B params)" min={1} max={70} step={0.5} val={modelB} onChange={setModelB} color={color} />
+      <Slider label="LoRA rank r" min={1} max={64} val={rank} onChange={setRank} color={color} />
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+        <StatBox label="LoRA params" val={`${(loraParams / 1e6).toFixed(1)}M`} color={color} />
+        <StatBox label="% of full FT" val={(ratio * 100).toFixed(2)} unit="%" color={color} />
+        <StatBox label="Full FT VRAM" val={`${fullGB.toFixed(0)}GB`} color="#ff4444" />
+        <StatBox label="QLoRA VRAM" val={`${loraGB.toFixed(1)}GB`} color="#44ff88" />
+      </div>
+    </LabWrap>
+  );
+}
+
+// ─── LAB: Prompt Engineering & CoT ───────────────────────────────────────────
+function LabPrompting({ color }) {
+  const [mode, setMode] = useState("Zero-shot");
+  const examples = {
+    "Zero-shot": {
+      prompt: `Q: I prepare 53 pancakes, eat 5 and give 7 to Gina. 
+I then prepare 26 more. How many pancakes are left?
+A:`,
+      response: "67 pancakes are left.",
+      correct: false,
+      note: "Direct question — model often fails on multi-step arithmetic."
+    },
+    "Few-shot": {
+      prompt: `Q: Gina has 105 beans, gives 23 to Bob, uses 53 in soup. Left?
+A: 29 beans. 
+
+Q: I prepare 53 pancakes, eat 5, give 7. Then make 26 more. Left?
+A:`,
+      response: "67 pancakes are left.",
+      correct: false,
+      note: "Examples help format but don't guide reasoning steps."
+    },
+    "Chain-of-Thought": {
+      prompt: `Q: Gina has 105 beans, gives 23 to Bob, uses 53 in soup. Left?
+A: Step by step: 105 − 23 = 82. 82 − 53 = 29. So 29 beans left.
+
+Q: I prepare 53 pancakes, eat 5, give 7. Then make 26 more. Left?
+A:`,
+      response: "Step by step: 53 − 5 = 48. 48 − 7 = 41. 41 + 26 = 67. So 67 pancakes left. ✓",
+      correct: true,
+      note: "CoT forces the model to generate intermediate steps — Wei et al. 2022."
+    },
+    "RAG": {
+      prompt: `[Retrieved context: Today's weather in Paris is sunny, 22°C]
+
+User: What should I wear in Paris today?
+Assistant:`,
+      response: "Based on today's sunny 22°C weather in Paris, I'd suggest light clothing — a t-shirt and maybe a light jacket for the evening.",
+      correct: true,
+      note: "Retrieval-Augmented Generation: inject fresh knowledge into the context window."
+    },
+  };
+  const ex = examples[mode];
+  return (
+    <LabWrap title="Prompt Engineering §8.1" color={color}>
+      <BtnRow options={Object.keys(examples)} active={mode} onSelect={setMode} color={color} />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+        <div>
+          <div style={{ fontFamily: "monospace", fontSize: 9, color: "#445", marginBottom: 4, textTransform: "uppercase" }}>Prompt</div>
+          <div style={{ background: "#0a0c10", borderRadius: 8, padding: 10, fontFamily: "monospace", fontSize: 11, color: "#667", lineHeight: 1.7, whiteSpace: "pre-wrap", minHeight: 100 }}>{ex.prompt}</div>
+        </div>
+        <div>
+          <div style={{ fontFamily: "monospace", fontSize: 9, color: "#445", marginBottom: 4, textTransform: "uppercase" }}>Model Response</div>
+          <div style={{ background: ex.correct ? "#0a1a0a" : "#1a0e0a", border: `1px solid ${ex.correct ? "#44ff8844" : "#ff884444"}`, borderRadius: 8, padding: 10, fontFamily: "monospace", fontSize: 11, color: ex.correct ? "#44ff88" : "#ff8844", lineHeight: 1.7, minHeight: 100 }}>{ex.response}</div>
+        </div>
+      </div>
+      <p style={{ fontSize: 11, color: "#7a7a8a", fontFamily: "monospace", margin: 0 }}>{ex.note}</p>
+    </LabWrap>
+  );
+}
+
+// ─── CHAPTERS DATA ────────────────────────────────────────────────────────────
+const CHAPTERS = [
+  {
+    id: "foundations", title: "Foundations", icon: "🧮", color: "#4fffb0",
+    sub: "ML · Computation · Training",
+    sections: [
+      {
+        title: "1.1 Learning from Data",
+        concept: "A parametric model f(x;w) maps input x to prediction ŷ. We collect a training set 𝒟 = {(xₙ,yₙ)} and find w* that minimizes a loss ℒ(w). Parameters are often called 'weights' by analogy with synaptic weights.",
+        math: "\\hat{y} = f(x; w^*), \\quad w^* = \\arg\\min_w \\mathcal{L}(w)",
+        intuition: "The model is just code with dials (w). Training turns those dials until predictions match data. Everything else in deep learning is about making this work at scale.",
+        quote: { text: "Most of the content of this book is about the definition of f, which in realistic scenarios is a complex combination of pre-defined sub-modules.", src: "Fleuret §1.1" },
+      },
+      {
+        title: "1.2 Basis Function Regression",
+        concept: "Express f as a linear combination of fixed basis functions f₁,...,f_K. Since f(xₙ;w) is linear in w and ℒ is quadratic in f, finding w* reduces to solving a linear system — a closed-form solution exists!",
+        math: "f(x;w) = \\sum_{k=1}^K w_k f_k(x), \\quad \\mathcal{L}(w) = \\frac{1}{N}\\sum_n (y_n - f(x_n;w))^2",
+        intuition: "Gaussian bumps placed along the x-axis, each scaled by a learned weight. More bumps = more expressive = risk of overfitting. This is the simplest 'neural network' you can train.",
+        Lab: LabBasisRegression,
+      },
+      {
+        title: "1.3 Underfitting & Overfitting",
+        concept: "Model capacity determines flexibility. Too low → underfitting (high train error). Too high relative to data → overfitting (low train error, high validation error). The art of ML is finding the right inductive bias.",
+        math: "\\text{Generalization gap} = \\mathcal{L}_{\\text{val}}(w^*) - \\mathcal{L}_{\\text{train}}(w^*)",
+        intuition: "Like memorizing exam answers vs. understanding the subject. A model that memorizes the training set fails on new data. Regularization and more data both help.",
+        quote: { text: "A large part of the art of applied machine learning is to design models that are not too flexible yet still able to fit the data.", src: "Fleuret §1.3" },
+        Lab: LabOverfitting,
+      },
+      {
+        title: "3.1 Loss Functions",
+        concept: "The loss is a proxy for what we truly want to optimize. MSE for regression, cross-entropy for classification (logits → softmax → −log P̂(true class)), contrastive loss for metric learning.",
+        math: "\\mathcal{L}_{ce}(w) = -\\frac{1}{N}\\sum_n \\log \\frac{e^{f(x_n;w)_{y_n}}}{\\sum_z e^{f(x_n;w)_z}}",
+        intuition: "Cross-entropy punishes confident wrong predictions harshly. It's the log probability assigned to the true class — gradient flows even when the model is slightly wrong.",
+        Lab: LabCrossEntropy,
+      },
+      {
+        title: "3.3 Gradient Descent & Adam",
+        concept: "No closed form for deep nets. We iteratively subtract a fraction of the gradient: w ← w − η∇ℒ. SGD uses mini-batches. Adam tracks running mean and variance of each gradient component, normalizing them automatically.",
+        math: "w_{n+1} = w_n - \\eta \\nabla\\mathcal{L}|_w(w_n)",
+        math2: "\\text{Adam: } w \\leftarrow w - \\eta \\frac{\\hat{m}}{\\sqrt{\\hat{v}} + \\epsilon}",
+        intuition: "SGD is a blindfolded hiker taking steps downhill. Adam is a hiker with memory — it moves faster in low-gradient directions and slows in erratic ones.",
+        Lab: LabGradientDescent,
+      },
+      {
+        title: "3.4 Backpropagation",
+        concept: "Chain rule applied to nested functions: the backward pass multiplies gradients by Jacobians, propagating the loss signal back through every layer. The forward pass costs 1×, backward ~2×.",
+        math: "\\nabla\\mathcal{\\ell}|_{x^{(d-1)}} = J_{f^{(d)}}|_x^\\top \\cdot \\nabla\\mathcal{\\ell}|_{x^{(d)}}",
+        intuition: "Think of each layer as a relay: the backward pass passes a 'blame signal' upstream. Tanh saturates → signal vanishes. Skip connections create gradient highways.",
+        quote: { text: "The gradient decreasing exponentially is called the vanishing gradient, and it may make training impossible.", src: "Fleuret §3.4" },
+        Lab: LabBackprop,
+      },
+      {
+        title: "3.7 Scaling Laws",
+        concept: "Performance improves predictably with compute, data, and model size following power laws (Kaplan et al. 2020). Chinchilla showed optimal training: ~20 tokens per parameter. This insight drives all modern LLM training budgets.",
+        math: "\\mathcal{L}(N,D) \\approx \\left(\\frac{N_c}{N}\\right)^{\\alpha_N} + \\left(\\frac{D_c}{D}\\right)^{\\alpha_D} + L_\\infty",
+        intuition: "More parameters help, but only if you have enough data. GPT-3 was undertrained by Chinchilla's standards. This is why Llama-7B trained on 1T tokens beats GPT-3 175B on many benchmarks.",
+        Lab: LabScaling,
+      },
+    ]
+  },
+  {
+    id: "computation", title: "Computation", icon: "⚡", color: "#00ffff",
+    sub: "GPUs · Tensors · Memory",
+    sections: [
+      {
+        title: "2.1 GPUs & Batches",
+        concept: "GPUs have thousands of parallel CUDA cores and their own VRAM. The bottleneck is memory bandwidth, not compute. Processing a batch of B samples costs roughly the same as 1 sample — so maximize batch size.",
+        math: "\\text{Throughput} \\propto B, \\quad \\text{Memory} = B \\times T \\times D \\times \\text{bytes/param}",
+        intuition: "GPUs are like wide highways — great for parallel traffic (batches), terrible for single cars (batch=1). Memory bandwidth, not FLOPS, is usually the real bottleneck.",
+        quote: { text: "A GPU processes a batch that fits in memory almost as quickly as it would process a single sample.", src: "Fleuret §2.1" },
+        Lab: LabGPU,
+      },
+      {
+        title: "2.2 Tensors",
+        concept: "Tensors are N-dimensional arrays: scalars (0D), vectors (1D), matrices (2D), image batches (4D: B×C×H×W). PyTorch/JAX separate shape from memory layout, making reshape/transpose nearly free — crucial for efficiency.",
+        math: "X \\in \\mathbb{R}^{N_1 \\times N_2 \\times \\cdots \\times N_D}, \\quad \\text{e.g. batch of images: } B \\times C \\times H \\times W",
+        intuition: "Every operation in a neural net — attention, convolution, normalization — is just tensor algebra. The entire training loop is orchestrated tensor ops, enabling GPU parallelism.",
+      },
+    ]
+  },
+  {
+    id: "components", title: "Components", icon: "🔧", color: "#7c83fd",
+    sub: "Layers · Attention · Norms",
+    sections: [
+      {
+        title: "4.2 Linear Layers",
+        concept: "The fully connected (affine) layer computes y = Wx + b. Despite seeming limited to geometric transforms, it computes dot-product similarity scores between input vectors and weight rows — a key operation in attention.",
+        math: "y = Wx + b, \\quad W \\in \\mathbb{R}^{D' \\times D}, \\quad b \\in \\mathbb{R}^{D'}",
+        intuition: "Every matrix multiplication is asking 'how much does input x match each pattern stored in W?' The output dimension D' is like having D' pattern detectors.",
+      },
+      {
+        title: "4.3 Activation Functions",
+        concept: "Without nonlinearities, deep nets collapse to a single linear layer. ReLU (most common), Tanh (classical), GELU (transformers), Leaky ReLU (prevents dead neurons).",
+        math: "\\text{ReLU}(x) = \\max(0, x), \\quad \\text{GELU}(x) = x\\,\\Phi(x)",
+        intuition: "Activations are the 'creativity' of neural nets. Without them, depth is useless. GELU is favored in transformers because it's smooth and slightly stochastic-like.",
+        Lab: LabActivations,
+      },
+      {
+        title: "4.5 Dropout",
+        concept: "During training, randomly zero out activations with probability p and rescale by 1/(1-p). Disabled at test time. Forces the network to learn redundant representations — a form of implicit ensemble.",
+        math: "y_i = \\frac{1}{1-p} \\cdot m_i \\cdot x_i, \\quad m_i \\sim \\text{Bernoulli}(1-p)",
+        intuition: "Like studying with earplugs — you can't rely on one sense, so you learn them all. For 2D signals, drop entire channels (not individual pixels) since neighbors can reconstruct single values.",
+      },
+      {
+        title: "4.6 Normalizing Layers",
+        concept: "BatchNorm normalizes across the batch dimension (requires large batches). LayerNorm normalizes across the feature dimension per sample (works with batch=1 — essential for Transformers).",
+        math: "\\text{BN: } z_{b,d} = \\frac{x_{b,d}-\\hat{m}_d}{\\sqrt{\\hat{v}_d+\\epsilon}}, \\quad \\text{LN: } z_{b,d} = \\frac{x_{b,d}-\\hat{m}_b}{\\sqrt{\\hat{v}_b+\\epsilon}}",
+        intuition: "Normalization is a 'reset button' — it prevents early layers from inadvertently scaling later layers. BN has a regularization effect as a bonus.",
+        Lab: LabNorm,
+      },
+      {
+        title: "4.7 Skip Connections",
+        concept: "Transport the signal unchanged across multiple layers: y = f(x) + x. This creates direct gradient highways, preventing vanishing gradients. Makes training hundreds of layers feasible (ResNet, Transformer).",
+        math: "y^{(d)} = f^{(d)}(x^{(d-1)}) + x^{(d-1)}",
+        intuition: "It's easier to learn a small correction (residual) than a full transformation. If f learns zero, the layer just passes the signal through — a safe initialization.",
+      },
+      {
+        title: "4.8 Multi-Head Attention",
+        concept: "For each query Qq, compute dot-product similarity against all keys Kk, normalize with softmax, then aggregate values Vk by those scores. H heads run in parallel, each attending to different aspects.",
+        math: "A_{q,k} = \\text{softmax}\\!\\left(\\frac{Q_q \\cdot K_k}{\\sqrt{D_{QK}}}\\right), \\quad Y_q = \\sum_k A_{q,k}\\, V_k",
+        intuition: "Each head is a soft lookup: 'which other tokens are most relevant to me?' Multiple heads capture different types of relationships (syntactic, semantic, positional).",
+        Lab: LabAttention,
+      },
+      {
+        title: "4.10 Positional Encoding",
+        concept: "Attention is permutation-equivariant — it ignores position. Sinusoidal positional encodings inject position info at different frequencies, letting the model distinguish 'the cat sat' from 'sat the cat'.",
+        math: "\\text{PE}[t,d] = \\begin{cases}\\sin\\!\\left(\\frac{t}{10^{4d/D}}\\right) & d \\text{ even}\\\\ \\cos\\!\\left(\\frac{t}{10^{4(d-1)/D}}\\right) & d \\text{ odd}\\end{cases}",
+        intuition: "Different frequencies = different clocks. Low frequencies encode absolute position (slow-changing), high frequencies encode local offsets (fast-changing). The model can attend to 'words 3 apart' via learned attention patterns.",
+        Lab: LabPositionalEncoding,
+      },
+    ]
+  },
+  {
+    id: "architectures", title: "Architectures", icon: "🏗", color: "#a855f7",
+    sub: "MLPs · CNNs · Transformers",
+    sections: [
+      {
+        title: "5.1 Multi-Layer Perceptrons",
+        concept: "Alternating fully connected layers and activations. Universal approximation theorem (Cybenko 1989): a single hidden layer MLP can approximate any continuous function on a compact domain — if width is unbounded.",
+        math: "f = \\ell_2 \\circ \\sigma \\circ \\ell_1 \\circ \\sigma \\circ \\cdots",
+        intuition: "The universal approx theorem is often misunderstood — it says you *can* represent anything, not that gradient descent will *find* it. Depth helps learning, not just representational power.",
+      },
+      {
+        title: "5.2 Convolutional Networks",
+        concept: "Conv layers apply the same small filter everywhere (translation equivariance). ResNets (He et al. 2015) add residual connections between bottleneck blocks. LeNet → AlexNet → VGG → ResNet-50 (25M params, 49 GFLOP).",
+        math: "Y[d', h, w] = \\sum_{d,k,l} X[d, h{+}k, w{+}l] \\cdot W[d', d, k, l] + b[d']",
+        intuition: "Local feature detectors → combination detectors → semantic detectors. Each layer doubles channels and halves spatial size. The receptive field grows with depth.",
+      },
+      {
+        title: "5.3 Transformers (GPT / BERT / ViT)",
+        concept: "Stacked self-attention + feedforward blocks. GPT: causal decoder (next-token prediction). BERT: bidirectional encoder (masked LM). ViT: split image into 16×16 patches treated as tokens.",
+        math: "\\text{Transformer block: } y = x + \\text{FFN}(\\text{LayerNorm}(x + \\text{MHA}(\\text{LayerNorm}(x))))",
+        intuition: "The transformer is brutally simple: attention is a soft dictionary lookup, FFN is a memory bank. The magic is that scaling this simple recipe to billions of parameters + trillions of tokens works extraordinarily well.",
+        Lab: LabTransformer,
+      },
+    ]
+  },
+  {
+    id: "applications", title: "Applications", icon: "🌍", color: "#00d4ff",
+    sub: "Vision · Language · Multimodal",
+    sections: [
+      {
+        title: "6.2 Image Classification",
+        concept: "Input image → CNN/ViT → logits → softmax → cross-entropy loss. ResNets pre-trained on ImageNet (1.2M images, 1000 classes) are fine-tuned for most vision tasks. Data augmentation is essential.",
+        math: "\\hat{y} = \\arg\\max_c f(x;w)_c, \\quad \\mathcal{L} = \\mathcal{L}_{ce}(f(x;w), y)",
+        intuition: "ImageNet pre-training gives 'visual concepts for free'. The same ResNet backbone powers object detection, segmentation, and medical imaging with minimal fine-tuning.",
+      },
+      {
+        title: "6.6 CLIP — Text-Image Matching",
+        concept: "Train image encoder f (ViT) and text encoder g (GPT) jointly on 400M image-text pairs. The N×N similarity matrix is trained to be diagonal. Enables zero-shot classification by comparing image to text descriptions.",
+        math: "\\ell_{m,n} = f(i_m) \\cdot g(t_n), \\quad \\mathcal{L} = \\text{cross-entropy on diagonal}",
+        intuition: "CLIP is the bridge between vision and language. Instead of discrete labels, it learns a joint embedding space. 'A photo of a dog' is closer to dog images than 'A photo of a cat' — without ever being trained on the task.",
+        Lab: LabCLIP,
+      },
+      {
+        title: "7.1 Text Generation (LLMs)",
+        concept: "GPT-style autoregressive generation: predict next token from all previous tokens. GPT-3 = 175B params, 96 layers, 96 heads, d=12288. Fine-tuning with RLHF aligns raw next-token predictors to helpful assistants.",
+        math: "P(X_1,...,X_T) = \\prod_{t=1}^T P(X_t | X_1,...,X_{t-1})",
+        intuition: "A language model is a probability distribution over text. Generating a sentence is repeated sampling from this distribution. RLHF trains a reward model from human preferences, then uses RL to maximize expected reward.",
+        Lab: LabPrompting,
+      },
+      {
+        title: "7.2 Diffusion Models",
+        concept: "Gradually corrupt an image with noise (forward process), then train a denoiser to reverse it. Sampling = start from Gaussian noise, apply learned denoiser T times. The cosine schedule degrades signal more gently.",
+        math: "q(x_t|x_0) = \\mathcal{N}(\\sqrt{\\bar{\\alpha}_t}\\,x_0,\\,(1-\\bar{\\alpha}_t)I)",
+        intuition: "Diffusion models are like a sculptor who starts with a marble block (noise) and gradually chips away to reveal the image. The denoiser learns 'what usually comes next when de-noising this blurry thing'.",
+        Lab: LabDiffusion,
+      },
+    ]
+  },
+  {
+    id: "compute", title: "Compute Edge", icon: "🔬", color: "#ff69b4",
+    sub: "Quantization · LoRA · Prompting",
+    sections: [
+      {
+        title: "8.1 Prompt Engineering",
+        concept: "Craft the input to bias the autoregressive process without touching weights. Zero-shot = direct question. Few-shot = examples in context. Chain-of-Thought = force intermediate reasoning steps. RAG = inject retrieved knowledge.",
+        math: "P(Y|X) \\approx P(Y|\\text{prompt}(X, \\text{examples}), \\theta)",
+        intuition: "The prompt is the cheapest possible way to adapt an LLM. CoT works because intermediate steps are independently more likely to be correct — the model has seen more step-by-step reasoning than direct answers.",
+        Lab: LabPrompting,
+      },
+      {
+        title: "8.2 Quantization",
+        concept: "Store weights in fewer bits: FP32→FP16→INT8→INT4. During inference, averaging effect mitigates precision loss. Q4_1 (llama.cpp): blocks of 32 entries → scale d + bias m in FP16 + 4-bit entries = 20 bytes vs 64 bytes.",
+        math: "\\tilde{x} = d \\cdot q + m, \\quad q \\in \\{0,...,2^b-1\\}, \\quad \\text{Q4\\_1: 20B vs 64B per block}",
+        intuition: "LLM inference is memory-bandwidth bound, not compute-bound. Halving bits → 2× throughput and 2× context length for the same VRAM. Quality degrades gracefully — INT4 is often indistinguishable from FP16.",
+        Lab: LabQuantLoRA,
+      },
+      {
+        title: "8.3 LoRA & QLoRA",
+        concept: "Instead of full fine-tuning (update all W), add low-rank correction matrices: W' = W + BA. Rank r=16 reduces trainable params from d² to 2rd — typically 0.1% of model. QLoRA = INT4 frozen base + FP16 LoRA adapters.",
+        math: "W' = W + BA, \\quad B \\in \\mathbb{R}^{d \\times r},\\; A \\in \\mathbb{R}^{r \\times d},\\; r \\ll d",
+        intuition: "Fine-tuning is mostly redundant. Low-rank hypothesis: important adaptations live in a low-dimensional subspace. QLoRA makes it possible to fine-tune a 7B model on an RTX 4050 6GB.",
+        Lab: LabQuantLoRA,
+      },
+    ]
+  },
 ];
 
 // ─── SECTION CARD ─────────────────────────────────────────────────────────────
 function SectionCard({ section, color, index }) {
   const [open, setOpen] = useState(false);
   return (
-    <div style={{ marginBottom: 10, borderRadius: 12, overflow: "hidden", border: `1px solid ${open ? color + "44" : "#1a1a1a"}`, transition: "border 0.3s" }}>
-      <button onClick={() => setOpen(o => !o)} style={{ width: "100%", textAlign: "left", padding: "14px 18px", background: open ? `linear-gradient(90deg,${color}0d,transparent)` : "#0e1012", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }}>
-        <span style={{ color, fontFamily: "monospace", fontSize: 11, minWidth: 26 }}>{String(index + 1).padStart(2, "0")}</span>
-        <span style={{ color: open ? "#fff" : "#c8cdd8", fontSize: 14, fontWeight: 500, flex: 1, textAlign: "left" }}>{section.title}</span>
-        <span style={{ color, fontSize: 18, transform: open ? "rotate(90deg)" : "none", transition: "transform 0.3s", display: "block" }}>›</span>
+    <div style={{ marginBottom: 8, borderRadius: 12, overflow: "hidden", border: `1px solid ${open ? color + "44" : "#161a20"}`, transition: "border 0.3s" }}>
+      <button onClick={() => setOpen(o => !o)} style={{
+        width: "100%", textAlign: "left", padding: "13px 16px",
+        background: open ? `linear-gradient(90deg,${color}10,transparent)` : "#0c0e12",
+        border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 12
+      }}>
+        <span style={{ color, fontFamily: "monospace", fontSize: 10, minWidth: 28, background: color + "15", padding: "2px 6px", borderRadius: 4 }}>{String(index + 1).padStart(2, "0")}</span>
+        <span style={{ color: open ? "#fff" : "#b0b8c4", fontSize: 13, fontWeight: 500, flex: 1 }}>{section.title}</span>
+        {section.Lab && <span style={{ fontFamily: "monospace", fontSize: 9, color: color + "88", background: color + "15", padding: "2px 8px", borderRadius: 10 }}>⚗ lab</span>}
+        <span style={{ color, fontSize: 16, transform: open ? "rotate(90deg)" : "none", transition: "transform 0.25s" }}>›</span>
       </button>
       {open && (
-        <div style={{ padding: "0 18px 20px", background: "#080a0d" }}>
-          <div style={{ paddingTop: 14 }}>
-            <div style={{ background: "#0f1115", borderLeft: `3px solid ${color}`, borderRadius: "0 8px 8px 0", padding: "12px 16px", marginBottom: 12, fontFamily: "monospace", fontSize: 12, color: "#c8cdd8", lineHeight: 1.9, whiteSpace: "pre-wrap" }}>
+        <div style={{ padding: "0 16px 18px", background: "#080a0d" }}>
+          <div style={{ paddingTop: 12 }}>
+            {/* Concept */}
+            <div style={{ background: "#0c0e14", border: `1px solid ${color}18`, borderLeft: `3px solid ${color}`, borderRadius: "0 8px 8px 0", padding: "10px 14px", marginBottom: 10, fontSize: 12, color: "#b0b8c4", lineHeight: 1.85, fontFamily: "Georgia, serif" }}>
               {section.concept}
             </div>
-            <div style={{ background: "#0a120a", border: "1px solid #142014", borderRadius: 10, padding: "12px 16px", marginBottom: 10 }}>
-              <div style={{ fontFamily: "monospace", fontSize: 9, color: "#4a8a5a", letterSpacing: "0.1em", marginBottom: 8, textTransform: "uppercase" }}>The Math</div>
-              <div style={{ overflowX: "auto", paddingBottom: 4 }}>
+            {/* Math */}
+            <div style={{ background: "#080e0a", border: "1px solid #0e1e0e", borderRadius: 10, padding: "10px 14px", marginBottom: 10 }}>
+              <div style={{ fontFamily: "monospace", fontSize: 9, color: "#3a7a4a", letterSpacing: "0.1em", marginBottom: 8, textTransform: "uppercase" }}>The Math</div>
+              <div style={{ overflowX: "auto", textAlign: "center" }}>
                 <MathEq tex={section.math} display />
-                {section.math2 && <div style={{ marginTop: 10 }}><MathEq tex={section.math2} display /></div>}
+                {section.math2 && <div style={{ marginTop: 8 }}><MathEq tex={section.math2} display /></div>}
               </div>
             </div>
-            <div style={{ background: "#120f00", border: "1px solid #2a2000", borderRadius: 10, padding: "12px 16px", marginBottom: 4 }}>
-              <div style={{ fontFamily: "monospace", fontSize: 9, color: "#b07820", letterSpacing: "0.1em", marginBottom: 6, textTransform: "uppercase" }}>💡 Intuition</div>
-              <p style={{ fontSize: 13, color: "#e0c878", lineHeight: 1.7 }}>{section.intuition}</p>
-            </div>
+            {/* Intuition */}
+            {section.intuition && (
+              <div style={{ background: "#100d00", border: "1px solid #1e1800", borderRadius: 10, padding: "10px 14px", marginBottom: 10 }}>
+                <div style={{ fontFamily: "monospace", fontSize: 9, color: "#8a6820", letterSpacing: "0.1em", marginBottom: 6, textTransform: "uppercase" }}>💡 Intuition</div>
+                <p style={{ fontSize: 12, color: "#c0a860", lineHeight: 1.75, margin: 0, fontFamily: "Georgia, serif" }}>{section.intuition}</p>
+              </div>
+            )}
+            {/* Quote */}
+            {section.quote && <Quote text={section.quote.text} source={section.quote.src} color={color} />}
+            {/* Lab */}
             {section.Lab && <section.Lab color={color} />}
           </div>
         </div>
@@ -1156,62 +1295,68 @@ function SectionCard({ section, color, index }) {
 
 // ─── MAIN ─────────────────────────────────────────────────────────────────────
 export default function AILandscape() {
-  const [activeChapter, setActiveChapter] = useState(0);
-  const ch = CHAPTERS[activeChapter];
+  const [ch, setCh] = useState(0);
+  const chapter = CHAPTERS[ch];
 
   return (
-    <div style={{ minHeight: "100vh", background: "#07080a", color: "#d0d4de", fontFamily: "'Georgia', serif" }}>
+    <div style={{ minHeight: "100vh", background: "#060709", color: "#d0d4de", fontFamily: "Georgia, serif" }}>
       {/* Header */}
-      <div style={{ background: "linear-gradient(180deg,#0d0f13,#07080a)", borderBottom: "1px solid #141820", padding: "28px 20px 22px", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 70% 50% at 50% -20%,rgba(79,255,176,0.06),transparent)", pointerEvents: "none" }} />
-        <div style={{ maxWidth: 940, margin: "0 auto" }}>
-          <div style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: "0.3em", color: "#3a4050", marginBottom: 8, textTransform: "uppercase" }}>From First Principles</div>
-          <h1 style={{ fontFamily: "'Georgia', serif", fontSize: "clamp(28px,5vw,50px)", fontWeight: 900, margin: 0, background: "linear-gradient(135deg,#fff,#666)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", lineHeight: 1.05 }}>
+      <div style={{ background: "linear-gradient(180deg,#0d0f15,#060709)", borderBottom: "1px solid #10141c", padding: "26px 20px 20px", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 80% 60% at 50% -10%,rgba(79,255,176,0.05),transparent)", pointerEvents: "none" }} />
+        <div style={{ maxWidth: 960, margin: "0 auto" }}>
+          <div style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: "0.3em", color: "#2a3040", marginBottom: 6, textTransform: "uppercase" }}>
+            Based on "The Little Book of Deep Learning" · François Fleuret, U. Geneva
+          </div>
+          <h1 style={{ fontFamily: "Georgia, serif", fontSize: "clamp(26px,5vw,48px)", fontWeight: 900, margin: 0, background: "linear-gradient(135deg,#ffffff,#556688)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", lineHeight: 1.05 }}>
             The AI Landscape
           </h1>
-          <p style={{ color: "#3a4050", margin: "8px 0 0", fontSize: 12, fontFamily: "monospace" }}>
-            Linear regression → Neural nets → CNNs → Transformers → Multimodal · Rendered math + interactive labs
+          <p style={{ color: "#2a3548", margin: "6px 0 0", fontSize: 11, fontFamily: "monospace" }}>
+            Basis regression → Backprop → Attention → Transformers → Diffusion → QLoRA · Rendered math + interactive labs
           </p>
         </div>
       </div>
 
-      {/* Chapter nav */}
-      <div style={{ maxWidth: 940, margin: "0 auto", padding: "14px 14px 0", display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 8 }}>
-        {CHAPTERS.map((c, i) => (
-          <button key={c.id} onClick={() => setActiveChapter(i)} style={{
-            background: activeChapter === i ? `linear-gradient(135deg,${c.color}18,${c.color}06)` : "#0e1012",
-            border: `1px solid ${activeChapter === i ? c.color : "#1a1a1a"}`,
-            borderRadius: 10, padding: "11px 8px", cursor: "pointer", textAlign: "center", transition: "all 0.25s"
-          }}>
-            <div style={{ fontSize: 20 }}>{c.icon}</div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: activeChapter === i ? c.color : "#c0c4cc", marginTop: 3 }}>{c.title}</div>
-            <div style={{ fontSize: 9, color: "#404550", fontFamily: "monospace", marginTop: 2 }}>{c.sections.length} topics</div>
-          </button>
-        ))}
+      {/* Chapter Tabs */}
+      <div style={{ background: "#060709", borderBottom: "1px solid #0e1018", position: "sticky", top: 0, zIndex: 10 }}>
+        <div style={{ maxWidth: 960, margin: "0 auto", display: "flex", overflowX: "auto", padding: "0 8px" }}>
+          {CHAPTERS.map((c, i) => (
+            <button key={c.id} onClick={() => setCh(i)} style={{
+              padding: "12px 14px", border: "none", cursor: "pointer", whiteSpace: "nowrap", fontFamily: "monospace", fontSize: 11, fontWeight: 600,
+              background: ch === i ? `linear-gradient(180deg,${c.color}14,transparent)` : "transparent",
+              color: ch === i ? c.color : "#3a4050",
+              borderBottom: ch === i ? `2px solid ${c.color}` : "2px solid transparent",
+              transition: "all 0.2s", display: "flex", alignItems: "center", gap: 6
+            }}>
+              <span>{c.icon}</span><span>{c.title}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Chapter content */}
-      <div style={{ maxWidth: 940, margin: "0 auto", padding: "14px 14px 60px" }}>
-        <div style={{ background: "#0c0e12", borderRadius: 14, border: `1px solid ${ch.color}22`, overflow: "hidden" }}>
-          <div style={{ padding: "20px 20px 16px", background: `linear-gradient(135deg,${ch.color}0d,transparent)`, borderBottom: `1px solid ${ch.color}18`, display: "flex", alignItems: "center", gap: 14 }}>
-            <span style={{ fontSize: 40 }}>{ch.icon}</span>
+      {/* Content */}
+      <div style={{ maxWidth: 960, margin: "0 auto", padding: "18px 12px 60px" }}>
+        <div style={{ background: "#0a0b0f", borderRadius: 14, border: `1px solid ${chapter.color}18`, overflow: "hidden", marginBottom: 14 }}>
+          <div style={{ padding: "18px 20px 14px", background: `linear-gradient(135deg,${chapter.color}0c,transparent)`, borderBottom: `1px solid ${chapter.color}14`, display: "flex", alignItems: "center", gap: 14 }}>
+            <span style={{ fontSize: 36 }}>{chapter.icon}</span>
             <div>
-              <h2 style={{ margin: 0, fontSize: 22, color: ch.color, fontFamily: "'Georgia',serif", fontWeight: 700 }}>{ch.title}</h2>
-              <p style={{ margin: "4px 0 0", color: "#3a4050", fontSize: 11, fontFamily: "monospace" }}>{ch.sub} · {ch.sections.length} interactive topics</p>
+              <h2 style={{ margin: 0, fontSize: 20, color: chapter.color, fontFamily: "Georgia,serif", fontWeight: 700 }}>{chapter.title}</h2>
+              <p style={{ margin: "3px 0 0", color: "#2a3548", fontSize: 10, fontFamily: "monospace" }}>{chapter.sub} · {chapter.sections.length} topics</p>
             </div>
           </div>
-          <div style={{ padding: 14 }}>
-            {ch.sections.map((sec, i) => <SectionCard key={sec.title} section={sec} color={ch.color} index={i} />)}
+          <div style={{ padding: 12 }}>
+            {chapter.sections.map((sec, i) => <SectionCard key={sec.title} section={sec} color={chapter.color} index={i} />)}
           </div>
         </div>
 
-        {/* Prev / Next */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 18 }}>
-          <button onClick={() => setActiveChapter(Math.max(0, activeChapter - 1))} disabled={activeChapter === 0} style={{ padding: "8px 16px", background: "transparent", border: "1px solid #2a2a2a", borderRadius: 8, color: activeChapter === 0 ? "#333" : "#999", fontFamily: "monospace", fontSize: 12, cursor: activeChapter === 0 ? "not-allowed" : "pointer" }}>← Prev</button>
-          <div style={{ display: "flex", gap: 6 }}>
-            {CHAPTERS.map((c, i) => <div key={i} onClick={() => setActiveChapter(i)} style={{ width: 8, height: 8, borderRadius: "50%", background: activeChapter === i ? c.color : "#222", cursor: "pointer", transition: "background 0.3s" }} />)}
+        {/* Nav */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <button onClick={() => setCh(Math.max(0, ch - 1))} disabled={ch === 0} style={{ padding: "8px 18px", background: "transparent", border: "1px solid #1e2228", borderRadius: 8, color: ch === 0 ? "#222" : "#778", fontFamily: "monospace", fontSize: 11, cursor: ch === 0 ? "not-allowed" : "pointer" }}>← Prev</button>
+          <div style={{ display: "flex", gap: 8 }}>
+            {CHAPTERS.map((c, i) => (
+              <button key={i} onClick={() => setCh(i)} style={{ width: 10, height: 10, borderRadius: "50%", background: ch === i ? c.color : "#1a1f26", border: "none", cursor: "pointer", transition: "background 0.25s", padding: 0 }} />
+            ))}
           </div>
-          <button onClick={() => setActiveChapter(Math.min(CHAPTERS.length - 1, activeChapter + 1))} disabled={activeChapter === CHAPTERS.length - 1} style={{ padding: "8px 16px", background: "transparent", border: "1px solid #2a2a2a", borderRadius: 8, color: activeChapter === CHAPTERS.length - 1 ? "#333" : "#999", fontFamily: "monospace", fontSize: 12, cursor: activeChapter === CHAPTERS.length - 1 ? "not-allowed" : "pointer" }}>Next →</button>
+          <button onClick={() => setCh(Math.min(CHAPTERS.length - 1, ch + 1))} disabled={ch === CHAPTERS.length - 1} style={{ padding: "8px 18px", background: "transparent", border: "1px solid #1e2228", borderRadius: 8, color: ch === CHAPTERS.length - 1 ? "#222" : "#778", fontFamily: "monospace", fontSize: 11, cursor: ch === CHAPTERS.length - 1 ? "not-allowed" : "pointer" }}>Next →</button>
         </div>
       </div>
     </div>
